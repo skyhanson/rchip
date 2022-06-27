@@ -12,6 +12,7 @@ editor_options:
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(GenomicRanges)
+library(ComplexHeatmap)
 source("../../util/intersect_functions.R")
 
 ```
@@ -95,5 +96,145 @@ encode_ctcf <- rtracklayer::import("/scratch/Shares/rinn/JR/rchip/data/ENCFF430K
 
 ```
 
+# Metaplot of CTCF chip replicates
 
+```{r}
+
+peak_coverage_CTCF1 <- coverage(CTCF_1)
+
+
+coverage_length <- elementNROWS(peak_coverage_CTCF1)
+
+coverage_gr <- GRanges(seqnames = names(coverage_length),
+                       IRanges(start = rep(1, length(coverage_length)), 
+                               end = coverage_length))
+
+
+all_promoters_gr <- rtracklayer::import("lncRNA_mrna_promoters.gtf")
+
+all_promoters_gr <- subsetByOverlaps(all_promoters_gr, 
+                                  coverage_gr, 
+                                  type="within", 
+                                  ignore.strand=TRUE)
+
+
+chromosomes <- intersect(names(peak_coverage_CTCF1), unique(as.character(seqnames(all_promoters_gr))))
+
+peak_coverage_CTCF1 <- peak_coverage_CTCF1[chromosomes]
+
+all_promoters_ir <- as(all_promoters_gr, "IntegerRangesList")[chromosomes]
+
+
+promoter_peak_view <- Views(peak_coverage_CTCF1, all_promoters_ir)
+
+promoter_peak_view <- lapply(promoter_peak_view, function(x) t(viewApply(x, as.vector)))
+
+
+promoter_peak_matrix <- do.call("rbind", promoter_peak_view)
+
+dim(promoter_peak_matrix)
+#TODO more peaks ??
+
+minus_idx <- which(as.character(strand(all_promoters_gr)) == "-")
+
+promoter_peak_matrix[minus_idx,] <- promoter_peak_matrix[minus_idx, ncol(promoter_peak_matrix):1]
+
+promoter_peak_matrix <- promoter_peak_matrix[rowSums(promoter_peak_matrix) > 0,]
+
+peak_sums <- colSums(promoter_peak_matrix)
+# normalization of binding events to 1 across promoter window
+peak_dens <- peak_sums/sum(peak_sums)
+# Create a data frame in order to plot this. 
+metaplot_df <- data.frame(x = -3e3:(3e3-1), dens = peak_dens)
+
+ggplot(metaplot_df, aes(x = x, y = dens)) + 
+  geom_line(size = 1.5)
+
+
+
+ggplot(metaplot_df, aes(x = x, y = dens)) + 
+  geom_vline(xintercept = 0, lty = 2) + 
+  geom_line(size = 1.5) + 
+  ggtitle("CTCF_1 Promoter Metaplot") + 
+  scale_x_continuous(breaks = c(-3000, 0, 3000),
+                     labels = c("-3kb", "TSS", "+3kb"),
+                     name = "") + 
+  ylab("Peak frequency")
+
+
+
+
+```
+
+
+# Metaplot CTCF 2
+
+```{r}
+
+
+peak_coverage_CTCF2 <- coverage(CTCF_2)
+
+
+coverage_length <- elementNROWS(peak_coverage_CTCF2)
+
+coverage_gr <- GRanges(seqnames = names(coverage_length),
+                       IRanges(start = rep(1, length(coverage_length)), 
+                               end = coverage_length))
+
+
+# all_promoters_gr <- rtracklayer::import("lncRNA_mrna_promoters.gtf")
+
+all_promoters_gr <- subsetByOverlaps(all_promoters_gr, 
+                                  coverage_gr, 
+                                  type="within", 
+                                  ignore.strand=TRUE)
+
+
+chromosomes <- intersect(names(peak_coverage_CTCF2), unique(as.character(seqnames(all_promoters_gr))))
+
+peak_coverage_CTCF2 <- peak_coverage_CTCF2[chromosomes]
+
+all_promoters_ir <- as(all_promoters_gr, "IntegerRangesList")[chromosomes]
+
+
+promoter_peak_view <- Views(peak_coverage_CTCF2, all_promoters_ir)
+
+promoter_peak_view <- lapply(promoter_peak_view, function(x) t(viewApply(x, as.vector)))
+
+
+promoter_peak_matrix <- do.call("rbind", promoter_peak_view)
+
+dim(promoter_peak_matrix)
+#TODO more peaks ??
+
+minus_idx <- which(as.character(strand(all_promoters_gr)) == "-")
+
+promoter_peak_matrix[minus_idx,] <- promoter_peak_matrix[minus_idx, ncol(promoter_peak_matrix):1]
+
+promoter_peak_matrix <- promoter_peak_matrix[rowSums(promoter_peak_matrix) > 0,]
+
+peak_sums <- colSums(promoter_peak_matrix)
+# normalization of binding events to 1 across promoter window
+peak_dens <- peak_sums/sum(peak_sums)
+# Create a data frame in order to plot this. 
+metaplot_df <- data.frame(x = -3e3:(3e3-1), dens = peak_dens)
+
+ggplot(metaplot_df, aes(x = x, y = dens)) + 
+  geom_line(size = 1.5)
+
+
+
+ggplot(metaplot_df, aes(x = x, y = dens)) + 
+  geom_vline(xintercept = 0, lty = 2) + 
+  geom_line(size = 1.5) + 
+  ggtitle("CTCF_1 Promoter Metaplot") + 
+  scale_x_continuous(breaks = c(-3000, 0, 3000),
+                     labels = c("-3kb", "TSS", "+3kb"),
+                     name = "") + 
+  ylab("Peak frequency")
+
+
+
+
+```
 
