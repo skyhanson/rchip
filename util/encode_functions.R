@@ -9,7 +9,7 @@ contstruct_query <- function(experiment_accession,
                              status = "released",
                              fields = c("accession", "read_count", "md5sum",
                                         "controlled_by", "paired_end",
-                                        "paired_with", "replicate", "target")) {
+                                        "paired_with", "replicate", "target", "file_format_type")) {
   query <- paste(list(paste0("type=", type),
                       paste0("status=", status),
                       paste0("file_format=", file_format),
@@ -27,7 +27,9 @@ encode_file_info <- function(experiment_accession,
                              status = "released",
                              fields = c("accession", "read_count", "md5sum",
                                         "controlled_by", "paired_end",
-                                        "paired_with", "replicate", "target")) {
+                                        "paired_with", "replicate", "target", "file_format_type","submitted_file_name", "output_type",
+                                        "replicate", "assembly", "biological_replicates", "technical_replicates", "encyclopedia_version",
+                                        "href")) {
   path <- "report.tsv?"
   base_url <- modify_url("https://www.encodeproject.org/", path = path)
   url <- contstruct_query(experiment_accession,

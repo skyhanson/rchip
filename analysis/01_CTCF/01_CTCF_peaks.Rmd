@@ -14,6 +14,7 @@ library(tidyverse)
 library(GenomicRanges)
 library(ComplexHeatmap)
 source("../../util/intersect_functions.R")
+source()
 
 ```
 
@@ -81,6 +82,10 @@ table(ov_count_overlaps)
 
 # similar answer
 
+
+consensus_ctcf <- create_consensus_peaks(CTCF_1, CTCF_2)
+
+
 ```
 ### Result: there is good overlap betwen the new CTCF samples 90% for CTCF1 and 77% CTCF 2 
 
@@ -92,8 +97,44 @@ table(ov_count_overlaps)
 ```{r}
 
 #TODO having trouble importing narrow peak files
-encode_ctcf <- rtracklayer::import("/scratch/Shares/rinn/JR/rchip/data/ENCFF430KTH.Bed")
+encode_ctcf <- rtracklayer::import("/scratch/Shares/rinn/JR/rchip/data/encode_peak_files/ENCFF736NYC.bed.gz")
 
+encode_peaks <- read.table("data/encode_peaks/ENCFF736NYC.bed.gz", sep = "\t")
+stam_ctcf <- GRanges(seqnames = encode_peaks$V1,
+                     ranges = IRanges(start = encode_peaks$V2,
+                                      end = encode_peaks$V3))
+
+
+# ctcf_peaks <- GenomicRanges::reduce(CTCF_1, CTCF_2)
+
+table(countOverlaps(stam_ctcf, CTCF_1))
+length(stam_ctcf)
+
+stam_ov1 <- findOverlaps(CTCF_1, stam_ctcf)
+length(unique(stam_ov1@from))/length(CTCF_1)
+
+stam_ov2 <- findOverlaps(CTCF_2, stam_ctcf)
+length(unique(stam_ov2@from))/length(CTCF_2)
+
+# ENCODE 4 PIPELINE -- bed narrowPeak	conservative IDR thresholded peaks	1, 2
+encode_peaks <- read.table("data/encode_peaks/ENCFF769AUF.bed.gz", sep = "\t")
+bernstein_ctcf <- GRanges(seqnames = encode_peaks$V1,
+                     ranges = IRanges(start = encode_peaks$V2,
+                                      end = encode_peaks$V3))
+
+bernstein_stam_ov1 <- findOverlaps(stam_ctcf, bernstein_ctcf)
+length(unique(bernstein_stam_ov1@from))/length(stam_ctcf)
+
+source("../../util/encode_functions.R")
+
+stam_files_df <- encode_file_info("ENCSR000DWE", file_format = "bed") %>%
+  filter(file_format_type == "narrowPeak",
+   output_type == "IDR thresholded peaks",
+   genome_assembly == "GRCh38",
+   biological_replicates == 12) %>%
+  mutate(full_download_url = paste0("https://www.encodeproject.org", download_url))
+system(paste0("cd data/encode_peaks wget ", stam_files_df$full_download_url))
+# https://www.encodeproject.org/files/ENCFF736NYC/@@download/ENCFF736NYC.bed.gz
 ```
 
 # Metaplot of CTCF chip replicates
