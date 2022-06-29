@@ -80,6 +80,25 @@ In the past, we've seen better results normalizing based on the total number of 
 An example of this is here: https://github.com/msmallegan/on_rchip/blob/bf94a96b2579748c8f923efbf413a1c7eac00b94/analysis/01_quantification/01_quantification.Rmd#L271
 
 
+```{bash}
+module load samtools
+
+# Would be better to figure out the read flags in feature counts to get a normalization factor
+
+# -c is counts
+# -F aligned reads (primary)
+
+samtools view -c -F 260 bernstein_CTCF_rep2.bam
+
+# 13147668
+
+samtools view -c -F 260 bernstein_CTCF_rep1.bam
+
+# 12414498
+
+```
+
+
 
 
 ```{r}
