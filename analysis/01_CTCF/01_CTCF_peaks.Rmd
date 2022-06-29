@@ -101,8 +101,6 @@ table(ov_count_overlaps)
 
 
 
-
-
 # Loading in ENCODE CTCF peaks (replicate 1 and 2 merged from Bernstein group)
 ```{r loading in ENCODE CTCF IDR replicate 1 and 2 merged narrow peak bed files}
 # John Stam CTCF bed narrowPeak	IDR thresholded peaks	1, 2
@@ -154,6 +152,19 @@ meyer_encode_ctcf <- GRanges(seqnames = encode_peaks$V1,
 
 # Finding overlap rates between encode biological replicates to get average overlaps between labs
 ```{r ENCODE ctcf chip overlaps}
+
+
+consensus_fl <- list.files("/scratch/Shares/rinnclass/CLASS_2022/JR/CLASS_2022/class_exeRcises/analysis/11_consensus_peaks/consensus_peaks", full.names = T)
+# using lapply to import all the files in consensus_fl
+consensus_peaks <- lapply(consensus_fl, rtracklayer::import)
+
+
+
+
+
+
+
+
 
 
 # Stam versus all

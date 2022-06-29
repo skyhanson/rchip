@@ -1,0 +1,71 @@
+---
+title: "RBP1 Chipseq analysis"
+author: "JR"
+date: "6/29/2022"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(GenomicRanges)
+library(ComplexHeatmap)
+library(Rsubread)
+library(DESeq2)
+source("../../util/intersect_functions.R")
+
+
+```
+
+# loading in gencode annotations
+```{r gencode annotations}
+
+# loading in gencode annotations
+gencode_gr <- rtracklayer::import("/scratch/Shares/rinn/genomes/Homo_sapiens/Gencode/v32/gencode.v32.annotation.gtf")
+
+# creating mRNA and lncRNA promoters (3kb up and downstream)
+lncrna_mrna_promoters <- get_promoter_regions(gencode_gr, biotype = c("lncRNA", "protein_coding"))
+
+# export to save for later
+rtracklayer::export(lncrna_mrna_promoters, "/scratch/Shares/rinn/JR/rchip/data/gene_annotations/lncRNA_mrna_promoters.gtf")
+
+```
+
+# Importing RBP1 broad_peaks from NF_core pipeline and bam files
+```{r RBP1 braod peak files from NF_Core }
+
+# loading in the RBP1 chip without RNAse (-)
+RBP1_no_rnase_1 <- rtracklayer::import("/scratch/Shares/rinn/JR/rchip/data/1-2-2_nextflow_run_all_samples/results/bwa/mergedLibrary/macs/broadPeak/RBP1_no_rnase_R1_peaks.broadPeak")
+
+# making a fake replicate for deseq
+RBP1_no_rnase_2 <- rtracklayer::import("/scratch/Shares/rinn/JR/rchip/data/1-2-2_nextflow_run_all_samples/results/bwa/mergedLibrary/macs/broadPeak/RBP1_no_rnase_R1_peaks.broadPeak")
+
+# loading in +rnase peak files
+RBP1_rnase_1 <- rtracklayer::import("/scratch/Shares/rinn/JR/rchip/data/1-2-2_nextflow_run_all_samples/results/bwa/mergedLibrary/macs/broadPeak/RBP1_rnase_R1_peaks.broadPeak")
+
+# making a fake replicate for deseq
+RBP1_rnase_2 <- rtracklayer::import("/scratch/Shares/rinn/JR/rchip/data/1-2-2_nextflow_run_all_samples/results/bwa/mergedLibrary/macs/broadPeak/RBP1_rnase_R1_peaks.broadPeak")
+
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
