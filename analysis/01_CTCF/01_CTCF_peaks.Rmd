@@ -9,12 +9,17 @@ editor_options:
 
 
 ```{r setup, include=FALSE}
+options(stringsAsFactors = FALSE)
+
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(GenomicRanges)
 library(ComplexHeatmap)
+library(Rsubread)
+library(DESeq2)
+library(valr)
 source("../../util/intersect_functions.R")
-source()
+
 
 ```
 
@@ -29,7 +34,6 @@ lncrna_mrna_promoters <- get_promoter_regions(gencode_gr, biotype = c("lncRNA", 
 
 # export to save for later
 rtracklayer::export(lncrna_mrna_promoters, "/scratch/Shares/rinn/JR/rchip/data/gene_annotations/lncRNA_mrna_promoters.gtf")
-
 
 ```
 
@@ -103,22 +107,28 @@ table(ov_count_overlaps)
 
 # Loading in ENCODE CTCF peaks (replicate 1 and 2 merged from Bernstein group)
 ```{r loading in ENCODE CTCF IDR replicate 1 and 2 merged narrow peak bed files}
+
 # John Stam CTCF bed narrowPeak	IDR thresholded peaks	1, 2
 # https://www.encodeproject.org/experiments/ENCSR000DWE/
 
-stam_encode_ctcf <- read.table("data/encode_peaks/ENCFF736NYC.bed.gz", sep = "\t")
-stam_encode_ctcf_gr <- GRanges(seqnames = encode_peaks$V1,
-                     ranges = IRanges(start = encode_peaks$V2,
-                                      end = encode_peaks$V3))
 
+#TODO rename encode_peaks_v1 to stam_encode_ctcf_gr$v1
+stam_encode_ctcf <- read.table("data/encode_peaks/ENCFF736NYC.bed.gz", sep = "\t")
+stam_encode_ctcf_gr <- GRanges(seqnames = stam_encode_ctcf$V1,
+                     ranges = IRanges(start = stam_encode_ctcf$V2,
+                                      end = stam_encode_ctcf$V3))
+
+length(stam_encode_ctcf_gr)
 
 # Bernstein CTCF bed narrowPeak	IDR thresholded peaks	1, 2
 # https://www.encodeproject.org/files/ENCFF362OPG/@@download/ENCFF362OPG.bed.gz
 
 bernstein_encode_ctcf <- read.table("data/encode_peaks/ENCFF362OPG.bed.gz", sep = "\t")
-bernstein_encode_ctcf <- GRanges(seqnames = encode_peaks$V1,
-                     ranges = IRanges(start = encode_peaks$V2,
-                                      end = encode_peaks$V3))
+bernstein_encode_ctcf <- GRanges(seqnames = bernstein_encode_ctcf$V1,
+                     ranges = IRanges(start = bernstein_encode_ctcf$V2,
+                                      end = bernstein_encode_ctcf$V3))
+
+length(bernstein_encode_ctcf)
 
 
 # Snyder CTCF bed narrowPeak	optimal IDR thresholded peaks	1, 2
@@ -129,6 +139,8 @@ snyder_encode_ctcf <- GRanges(seqnames = encode_peaks$V1,
                      ranges = IRanges(start = encode_peaks$V2,
                                       end = encode_peaks$V3))
 
+length(snyder_encode_ctcf)
+
 
 # iyer CTCF bed narrowPeak	IDR thresholded peaks	1, 2, 3
 # https://www.encodeproject.org/files/ENCFF221SKA/@@download/ENCFF221SKA.bed.gz
@@ -137,6 +149,8 @@ iyer_encode_ctcf <- read.table("data/encode_peaks/ENCFF221SKA.bed.gz", sep = "\t
 iyer_encode_ctcf <- GRanges(seqnames = encode_peaks$V1,
                      ranges = IRanges(start = encode_peaks$V2,
                                       end = encode_peaks$V3))
+
+length(iyer_encode_ctcf)
 
 
 
@@ -147,30 +161,82 @@ meyer_encode_ctcf <- read.table("data/encode_peaks/ENCFF119XFJ.bed.gz", sep = "\
 meyer_encode_ctcf <- GRanges(seqnames = encode_peaks$V1,
                      ranges = IRanges(start = encode_peaks$V2,
                                       end = encode_peaks$V3))
+
+length(meyer_encode_ctcf)
+
+# dataframe of names
+
+sample_df <- data.frame(experiment = c("stam", "bernstein", "snyder", "iyer", "meyers", "CTCF_1", "CTCF_2"), 
+                        file_name = c("data/encode_peaks/ENCFF736NYC.bed.gz", "data/encode_peaks/ENCFF362OPG.bed.gz", "data/encode_peaks/ENCFF396BZQ.bed.gz", "data/encode_peaks/ENCFF221SKA.bed.gz", "data/encode_peaks/ENCFF119XFJ.bed.gz", "/scratch/Shares/rinn/JR/rchip/data/1-2-2_nextflow_run_all_samples/results/bwa/mergedLibrary/macs/broadPeak/CTCF_10-20_shearing_R1_peaks.broadPeak", "/scratch/Shares/rinn/JR/rchip/data/1-2-2_nextflow_run_all_samples/results/bwa/mergedLibrary/macs/broadPeak/CTCF_20-60_shearing_R1_peaks.broadPeak" ))
+
+
 ```
+### Result: 
+
 
 
 # Finding overlap rates between encode biological replicates to get average overlaps between labs
 ```{r ENCODE ctcf chip overlaps}
 
+# using valr to import bed files
+# all_encode_fl <- list.files("data/encode_peaks/", full.names = T)
 
-consensus_fl <- list.files("/scratch/Shares/rinnclass/CLASS_2022/JR/CLASS_2022/class_exeRcises/analysis/11_consensus_peaks/consensus_peaks", full.names = T)
-# using lapply to import all the files in consensus_fl
-consensus_peaks <- lapply(consensus_fl, rtracklayer::import)
+all_encode_fl <- lapply(sample_df$file_name, read_bed)
+
+names(all_encode_fl) <- sample_df$experiment
+
+# adding our samples
+# not list needs to be there for output of gr_to_bed
+# all_encode_fl <- c(all_encode_fl, list(gr_to_bed(CTCF_1)), list(gr_to_bed(CTCF_2)))
+
+# making all overlaps and jaccard values
+
+all_ov_df <- expand.grid(names(all_encode_fl), names(all_encode_fl))
+
+for(i in 1:nrow(all_ov_df)) {
+  print(i)
+  j <- all_ov_df[i,"Var1"]
+  k <- all_ov_df[i,"Var2"]
+  
+  jindex <- bed_jaccard(all_encode_fl[[j]], all_encode_fl[[k]])
+  
+  all_ov_df[i, "jaccard"] <- jindex$jaccard
+}
+
+all_ov_df$jaccard[all_ov_df$jaccard == 1] <- NA
+
+all_ov_matrix <- all_ov_df %>%
+  pivot_wider(names_from = "Var2", values_from = "jaccard") %>%
+  column_to_rownames("Var1") %>% 
+  as.matrix()
 
 
+# library(pheatmap)
+pheatmap(all_ov_matrix)
+  
+  
+
+# all overlaps
+
+all_ov_num <- expand.grid(names(all_encode_fl), names(all_encode_fl))
+
+for(i in 1:nrow(all_ov_num)) {
+  print(i)
+  j <- all_ov_num[i,"Var1"]
+  k <- all_ov_num[i,"Var2"]
+  
+  jindex <- bed_jaccard(all_encode_fl[[j]], all_encode_fl[[k]])
+  
+  all_ov_num[i, "n"] <- jindex$n
+}
+
+all_ov_matrix <- all_ov_num %>%
+  pivot_wider(names_from = "Var2", values_from = "n") %>%
+  column_to_rownames("Var1") %>% 
+  as.matrix()
 
 
-
-
-
-
-
-
-# Stam versus all
-
-
-
+pheatmap(all_ov_matrix)
 
 
 
@@ -326,6 +392,8 @@ ggplot(metaplot_df, aes(x = x, y = dens)) +
                      name = "") + 
   ylab("Peak frequency")
 
+
+ggsave("figures/ctcf_1_metaplot.pdf")
 ```
 
 
@@ -435,7 +503,7 @@ ggplot(metaplot_df, aes(x = x, y = dens)) +
                      name = "") + 
   ylab("Peak frequency")
 
-
+ggsave("figures/ctcf_2_metaplot.pdf")
 ```
 
 

@@ -1,0 +1,227 @@
+---
+title: "Differential peak calling"
+author: "JR"
+date: "6/29/2022"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+options(stringsAsFactors = FALSE)
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(Rsubread)
+library(rtracklayer)
+```
+
+The first step in calling differential peaks is to have a consensus peak set called for the non-rnase treated samples.
+Since we want to be careful about peak boundaries, it's best to call peaks on the merge dataset.
+
+In order to call merged peaks, we'll run MACS3 with bin/call_merged_peak.sh
+
+The next step is to take the peak files and create and SAF file which is the input to featureCounts.
+
+
+
+```{r}
+ctcf_peaks <- import("results/CTCF_chipseq_combined_peaks.narrowPeak")
+# The SAF file needs to have these headers
+# GeneID		Chr	Start	End	Strand
+ctcf_saf <- ctcf_peaks %>%
+  as.data.frame() %>%
+  filter(grepl("chr", seqnames)) %>%
+  dplyr::rename(GeneID = name,
+                Chr = seqnames,
+                Start = start,
+                End = end,
+                Strand = strand) %>%
+    dplyr::select(GeneID, Chr, Start, End, Strand)
+write.table(ctcf_saf, "results/ctcf_peaks_combined.saf", sep = "\t", quote = F, row.names = F)
+```
+
+Now we need to run features counts on the bam files.
+In the rChIP experiment we'll use these peaks to quantify over the RNAse negative and RNAse positive.
+In this case, we'll use ENCODE CTCF experiments as a stand-in for RNase positive.
+
+```{r}
+# The ENCODE files are single-end reads
+se_bams <- list.files("data/encode_bam", full.names = T)
+fc_se <- featureCounts(files = se_bams,
+                    annot.ext = "results/ctcf_peaks_combined.saf",
+                    isPairedEnd = FALSE,
+                    nthreads = 6)
+
+# We'll need to run featureCounts seperately for the paired-end samples and non-paired end
+# The CTCF samples we ran are paired-end
+base_path <- "/scratch/Shares/rinn/JR/rchip/data/1-2-2_nextflow_run_all_samples/results/bwa/mergedLibrary/"
+pe_bams <- c(paste0(base_path, "CTCF_10-20_shearing_R1.mLb.clN.sorted.bam"), 
+             paste0(base_path, "CTCF_20-60_shearing_R1.mLb.clN.sorted.bam"),
+             paste0(base_path, "CTCF_10-20_shearing_input_R1.mLb.clN.sorted.bam"),
+             paste0(base_path, "CTCF_20-60_shearing_input_R1.mLb.clN.sorted.bam"))
+fc_pe <- featureCounts(files = pe_bams,
+                    annot.ext = "results/ctcf_peaks_combined.saf",
+                    isPairedEnd = TRUE,
+                    nthreads = 6)
+
+# Now we need to merge these count tables
+stopifnot(all(rownames(fc_pe$counts) == rownames(fc_se$counts)))
+peak_counts <- cbind(fc_se$counts, fc_pe$counts)
+```
+
+Now that we have the counts, we can run DEseq to compare counts over peak regions.
+
+For now we're comparing CTCF ChIP-seq run in different labs, 
+but typically this will be a comparison of RNAse + / -
+
+# Note on normalization
+
+In the past, we've seen better results normalizing based on the total number of mapped reads
+An example of this is here: https://github.com/msmallegan/on_rchip/blob/bf94a96b2579748c8f923efbf413a1c7eac00b94/analysis/01_quantification/01_quantification.Rmd#L271
+
+
+
+
+```{r}
+sample_df <- data.frame(filename = colnames(peak_counts)) %>%
+  # Cleanup sample names
+  mutate(sample_name = filename,
+         sample_name = gsub(".bam|.R1.mLb.clN.sorted|.shearing", "", sample_name),
+         sample_name = gsub("CTCF.10.20", "rinn.CTCF.rep1", sample_name),
+         sample_name = gsub("CTCF.20.60", "rinn.CTCF.rep2", sample_name)) %>%
+  separate(sample_name, into = c("experiment", "antibody", "replicate", "condition")) %>%
+  replace_na(list(condition = "IP"))
+
+# Snyder vs Rinn
+sample_df1 <- sample_df %>%
+  filter(experiment %in% c("snyder", "rinn"),
+         condition == "IP") %>%
+  mutate(experiment = factor(experiment, levels = c("rinn", "snyder")))
+peak_counts1 <- peak_counts[,sample_df1$filename]
+dds1 <- DESeqDataSetFromMatrix(countData = peak_counts1,
+                              colData = sample_df1,
+                              design = ~ experiment)
+
+dds1 <- DESeq(dds1)
+resultsNames(dds1)
+res1 <- results(dds1, name = "experiment_snyder_vs_rinn", tidy = TRUE)
+
+# Bernstein vs Rinn
+sample_df2 <- sample_df %>%
+  filter(experiment %in% c("bernstein", "rinn"),
+         condition == "IP") %>%
+  mutate(experiment = factor(experiment, levels = c("rinn", "bernstein")))
+peak_counts2 <- peak_counts[,sample_df2$filename]
+dds2 <- DESeqDataSetFromMatrix(countData = peak_counts2,
+                              colData = sample_df2,
+                              design = ~ experiment)
+
+dds2 <- DESeq(dds2)
+resultsNames(dds2)
+res2 <- results(dds2, name = "experiment_bernstein_vs_rinn", tidy = TRUE)
+
+
+```
+
+Now we need to calculate the fold-changes for each experiment vs input.
+
+```{r}
+# Rinn vs Input
+sample_rinn_input <- sample_df %>%
+  filter(experiment %in% c("rinn")) %>%
+  mutate(condition = factor(condition, levels = c("input", "IP")))
+peak_counts_rinn_input <- peak_counts[,sample_rinn_input$filename]
+dds_rinn_input <- DESeqDataSetFromMatrix(countData = peak_counts_rinn_input,
+                              colData = sample_rinn_input,
+                              design = ~ condition)
+
+dds_rinn_input <- DESeq(dds_rinn_input)
+resultsNames(dds_rinn_input)
+res_rinn_input <- results(dds_rinn_input, name = "condition_IP_vs_input", tidy = TRUE)
+
+# Snyder vs Input
+sample_snyder_input <- sample_df %>%
+  filter(experiment %in% c("snyder") |
+         experiment == "rinn" & condition == "input") %>%
+  mutate(condition = factor(condition, levels = c("input", "IP")))
+peak_counts_snyder_input <- peak_counts[,sample_snyder_input$filename]
+dds_snyder_input <- DESeqDataSetFromMatrix(countData = peak_counts_snyder_input,
+                              colData = sample_snyder_input,
+                              design = ~ condition)
+
+dds_snyder_input <- DESeq(dds_snyder_input)
+resultsNames(dds_snyder_input)
+res_snyder_input <- results(dds_snyder_input, name = "condition_IP_vs_input", tidy = TRUE)
+
+# Bernstein vs Input
+sample_bernstein_input <- sample_df %>%
+  filter(experiment %in% c("bernstein") |
+         experiment == "rinn" & condition == "input") %>%
+  mutate(condition = factor(condition, levels = c("input", "IP")))
+peak_counts_bernstein_input <- peak_counts[,sample_bernstein_input$filename]
+dds_bernstein_input <- DESeqDataSetFromMatrix(countData = peak_counts_bernstein_input,
+                              colData = sample_bernstein_input,
+                              design = ~ condition)
+
+dds_bernstein_input <- DESeq(dds_bernstein_input)
+resultsNames(dds_bernstein_input)
+res_bernstein_input <- results(dds_bernstein_input, name = "condition_IP_vs_input", tidy = TRUE)
+```
+
+
+Now we can make some plots.
+
+```{r}
+
+# The first plot will be snyder vs rinn.
+
+
+snyder_vs_rinn_df <- res1 %>%
+  dplyr::select(row, log2FoldChange, padj) %>%
+  dplyr::rename(l2fc_snyder_vs_rinn = log2FoldChange,
+                padj_snyder_vs_rinn = padj) %>%
+  left_join(res_snyder_input %>%
+              dplyr::select(row, log2FoldChange, padj) %>%
+              dplyr::rename(l2fc_snyder_vs_input = log2FoldChange,
+                            padj_snyder_vs_input = padj)) %>%
+  left_join(res_rinn_input %>%
+              dplyr::select(row, log2FoldChange, padj) %>%
+              dplyr::rename(l2fc_rinn_vs_input = log2FoldChange,
+                            padj_rinn_vs_input = padj))
+snyder_vs_rinn_df <- snyder_vs_rinn_df %>%
+  mutate(sig = padj_snyder_vs_rinn < 0.05)
+
+ggplot(snyder_vs_rinn_df, aes(x = l2fc_rinn_vs_input, y = l2fc_snyder_vs_input, color = sig)) +
+  geom_point() +
+  geom_hline(yintercept = 0) +
+  geom_vline(xintercept = 0) +
+  geom_abline(slope = 1)
+
+
+bernstein_vs_rinn_df <- res1 %>%
+  dplyr::select(row, log2FoldChange, padj) %>%
+  dplyr::rename(l2fc_bernstein_vs_rinn = log2FoldChange,
+                padj_bernstein_vs_rinn = padj) %>%
+  left_join(res_bernstein_input %>%
+              dplyr::select(row, log2FoldChange, padj) %>%
+              dplyr::rename(l2fc_bernstein_vs_input = log2FoldChange,
+                            padj_bernstein_vs_input = padj)) %>%
+  left_join(res_rinn_input %>%
+              dplyr::select(row, log2FoldChange, padj) %>%
+              dplyr::rename(l2fc_rinn_vs_input = log2FoldChange,
+                            padj_rinn_vs_input = padj))
+bernstein_vs_rinn_df <- bernstein_vs_rinn_df %>%
+  mutate(sig = padj_bernstein_vs_rinn < 0.05)
+
+ggplot(bernstein_vs_rinn_df, aes(x = l2fc_rinn_vs_input, y = l2fc_bernstein_vs_input, color = sig)) +
+  geom_point() +
+  geom_hline(yintercept = 0) +
+  geom_vline(xintercept = 0) +
+  geom_abline(slope = 1)
+
+```
+
+
+
+
+
