@@ -2,10 +2,13 @@
 title: "Differential peak calling"
 author: "JR"
 date: "6/29/2022"
-output: html_document
+output: git_hub 
 editor_options: 
   chunk_output_type: console
+mainfont:  Lucida Console
 ---
+
+
 
 ```{r setup, include=FALSE}
 options(stringsAsFactors = FALSE)
@@ -15,93 +18,123 @@ library(Rsubread)
 library(rtracklayer)
 ```
 
-The first step in calling differential peaks is to have a consensus peak set called for the non-rnase treated samples.
-Since we want to be careful about peak boundaries, it's best to call peaks on the merge dataset.
-
-In order to call merged peaks, we'll run MACS3 with bin/call_merged_peak.sh
-
-The next step is to take the peak files and create and SAF file which is the input to featureCounts.
+# The first step in calling differential peaks is to have a consensus peak set called
+# for the non-rnase treated samples.Since we want to be careful about peak boundaries, it's best to call peaks on the
+# merge dataset.
 
 
+# In order to call merged peaks, we'll run MACS3 with bin/call_merged_peak.sh
 
-```{r}
+# (1) Running MACS3
+
+# We ran this in the bin directory with Run.sh file. 
+# The data output from Macs was written to "results" folder
+
+```{r loading in the consensus peak file (- RNase ) }
+
+# loading in the narrow peak consensus peaks between two CTCF ChIPseq replicates (June 2022)
+# Two inputs compared to two replicates and run on narrow peak instead of NF_CORE output broadPeak
+
 ctcf_peaks <- import("results/CTCF_chipseq_combined_peaks.narrowPeak")
-# The SAF file needs to have these headers
+
+
+# The input to FeatureCounts is .saf (simple annotation file) which will quantify the reads in each peak
+# we need a SAF file needs that requires these colnames:
 # GeneID		Chr	Start	End	Strand
+# creating SAF file below
+
 ctcf_saf <- ctcf_peaks %>%
   as.data.frame() %>%
+  # making sure to only grab normal chr not contigs (e.g., GL000009.2)
   filter(grepl("chr", seqnames)) %>%
+  # renaming cols to fit format of .saf
   dplyr::rename(GeneID = name,
                 Chr = seqnames,
                 Start = start,
                 End = end,
                 Strand = strand) %>%
     dplyr::select(GeneID, Chr, Start, End, Strand)
+
+# Writting out .saf
 write.table(ctcf_saf, "results/ctcf_peaks_combined.saf", sep = "\t", quote = F, row.names = F)
 ```
 
-Now we need to run features counts on the bam files.
-In the rChIP experiment we'll use these peaks to quantify over the RNAse negative and RNAse positive.
-In this case, we'll use ENCODE CTCF experiments as a stand-in for RNase positive.
+# Step (2) Run feature counts across all bam files being tested
+# the input file will be the - RNase consensus peaks created above (and in /bin)
+# We will run feature counts over these windows in all the samples being tested (+ rnase etc)
+# For this example we loaded in BAM files from CTCF chipseq Bernstein and Snyder (01_CTCF)
+# For now we will use these as example +Rnase samples.
 
-```{r}
-# The ENCODE files are single-end reads
+# Really this approach works for comparing any two ChIP conditions for differential peaks.
+
+# Let's run feature counts on the bam files
+
+```{r feature counts across all bam files (+/- RNase)}
+
+# The ENCODE files are single-end reads and located in /data 
+# create an object of all bam files (*** including inputs ***)
 se_bams <- list.files("data/encode_bam", full.names = T)
+
+
+# Running feature counts on the bam files from ENCODE that are single ended (-RNase)
+# default is single ended but added isPairedEnd parameter to False
 fc_se <- featureCounts(files = se_bams,
                     annot.ext = "results/ctcf_peaks_combined.saf",
                     isPairedEnd = FALSE,
                     nthreads = 6)
 
-# We'll need to run featureCounts seperately for the paired-end samples and non-paired end
-# The CTCF samples we ran are paired-end
+
+# We'll need to run featureCounts separately for the paired-end samples 
+# Running our CTCF chip replicates and inputs through featureCounts 
+
+# these files are far away so creating base-path 
 base_path <- "/scratch/Shares/rinn/JR/rchip/data/1-2-2_nextflow_run_all_samples/results/bwa/mergedLibrary/"
+
+# Creating a list of all bams and file paths
 pe_bams <- c(paste0(base_path, "CTCF_10-20_shearing_R1.mLb.clN.sorted.bam"), 
              paste0(base_path, "CTCF_20-60_shearing_R1.mLb.clN.sorted.bam"),
              paste0(base_path, "CTCF_10-20_shearing_input_R1.mLb.clN.sorted.bam"),
              paste0(base_path, "CTCF_20-60_shearing_input_R1.mLb.clN.sorted.bam"))
+
+# Running feature counts on CTCF chip samples and inputs (June 2022)
 fc_pe <- featureCounts(files = pe_bams,
                     annot.ext = "results/ctcf_peaks_combined.saf",
                     isPairedEnd = TRUE,
                     nthreads = 6)
 
-# Now we need to merge these count tables
+# Now we need to merge the count tables for paired and single end reads
+# Checking everything is in order
 stopifnot(all(rownames(fc_pe$counts) == rownames(fc_se$counts)))
+
+# merging data with Cbind to keep rows the same (peak name)
 peak_counts <- cbind(fc_se$counts, fc_pe$counts)
+
+# saving
+write_rds(peak_counts, "results/CTCF_feature_counts_output.rds")
+
+# testing read in 
+
+peak_counts <- read_rds("results/CTCF_feature_counts_output.rds")
+
 ```
 
-Now that we have the counts, we can run DEseq to compare counts over peak regions.
+# Now that we have the counts, we can run DEseq to compare counts over peak regions.
 
-For now we're comparing CTCF ChIP-seq run in different labs, 
-but typically this will be a comparison of RNAse + / -
+# For now we're comparing CTCF ChIP-seq run in different labs, 
+# but typically this will be a comparison of RNAse + / -
+# We can for now test this approach with Encode being + RNase and our samples (June 2022 CTCF) as -RNase
 
 # Note on normalization
 
-In the past, we've seen better results normalizing based on the total number of mapped reads
-An example of this is here: https://github.com/msmallegan/on_rchip/blob/bf94a96b2579748c8f923efbf413a1c7eac00b94/analysis/01_quantification/01_quantification.Rmd#L271
+# In the past, we've seen better results normalizing based on the total number of mapped reads
+# An example of this is here:
+
+https://github.com/msmallegan/on_rchip/blob/bf94a96b2579748c8f923efbf413a1c7eac00b94/analysis/01_quantification/01_quantification.Rmd#L271
+
+# Step (3) Deseq
+```{r running deseq between our CTCF and encode CTCF two replicates each}
 
 
-```{bash}
-module load samtools
-
-# Would be better to figure out the read flags in feature counts to get a normalization factor
-
-# -c is counts
-# -F aligned reads (primary)
-
-samtools view -c -F 260 bernstein_CTCF_rep2.bam
-
-# 13147668
-
-samtools view -c -F 260 bernstein_CTCF_rep1.bam
-
-# 12414498
-
-```
-
-
-
-
-```{r}
 sample_df <- data.frame(filename = colnames(peak_counts)) %>%
   # Cleanup sample names
   mutate(sample_name = filename,
@@ -237,6 +270,30 @@ ggplot(bernstein_vs_rinn_df, aes(x = l2fc_rinn_vs_input, y = l2fc_bernstein_vs_i
   geom_hline(yintercept = 0) +
   geom_vline(xintercept = 0) +
   geom_abline(slope = 1)
+
+```
+
+# If we want to normalize the read counts from feature counts to total reads in the sample:
+# we run samtools to count reads in each bam file.
+# 260 flag means aligned reads
+# C flag is counts
+```{bash}
+
+# activating samtools in bash
+module load samtools
+
+#TODO Would be better to figure out the read flags in feature counts to get a normalization factor
+
+# -c is counts
+# -F aligned reads (primary)
+
+samtools view -c -F 260 bernstein_CTCF_rep2.bam
+
+# 13147668
+
+samtools view -c -F 260 bernstein_CTCF_rep1.bam
+
+# 12414498
 
 ```
 
