@@ -9,13 +9,13 @@ mainfont:  Lucida Console
 ---
 
 
-
 ```{r setup, include=FALSE}
 options(stringsAsFactors = FALSE)
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(Rsubread)
 library(rtracklayer)
+library(DESeq2)
 ```
 
 # The first step in calling differential peaks is to have a consensus peak set called
@@ -120,6 +120,7 @@ peak_counts <- read_rds("results/CTCF_feature_counts_output.rds")
 
 # Now that we have the counts, we can run DEseq to compare counts over peak regions.
 
+
 # For now we're comparing CTCF ChIP-seq run in different labs, 
 # but typically this will be a comparison of RNAse + / -
 # We can for now test this approach with Encode being + RNase and our samples (June 2022 CTCF) as -RNase
@@ -176,7 +177,6 @@ res2 <- results(dds2, name = "experiment_bernstein_vs_rinn", tidy = TRUE)
 ```
 
 Now we need to calculate the fold-changes for each experiment vs input.
-
 ```{r}
 # Rinn vs Input
 sample_rinn_input <- sample_df %>%
