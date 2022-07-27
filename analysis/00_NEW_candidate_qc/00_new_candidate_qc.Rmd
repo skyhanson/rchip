@@ -187,7 +187,7 @@ length(safa_rnase_peaks)
 
 
 
-# Now for the new candidates: HDAC1, PHF8 and CBX3
+# Now for the new candidates: HDAC1, PHF8 and CBX3, (STAG2/1)
 
 
 
@@ -513,6 +513,35 @@ ggplot(combined_metaplot_profile,
 ```
 
 
+# stag1 
+
+```{r}
+
+# wget https://www.encodeproject.org/files/ENCFF921BXP/@@download/ENCFF921BXP.bed.gz
+
+# reading in peaks from encode
+STAG_peaks <- read_tsv("/scratch/Shares/rinn/JR/rchip/analysis/00_NEW_candidate_qc/data/STAG1_2/ENCFF921BXP.bed.gz", col_names = F)
+
+# adding colnames 
+names(STAG_peaks) <- c('chromosome', 'start', 'end', 'name', 'score', 'strand', 
+                       'signalValue', 'pValue', 'qValue', 'peak_center')
+
+# converting to Granges
+STAG_gr <- GRanges(STAG_peaks$chromosome, IRanges(STAG_peaks$start, STAG_peaks$end))
+
+# creating metaplot DF and running profile_tss
+STAG_metaplot_df <- data.frame(x = integer(), dens = numeric(), dbp = character())
+STAG_metaplot_df <- profile_tss(STAG_gr, promoters)
+
+# plotting
+ggplot(STAG_metaplot_df, aes(x = x, y = dens)) + 
+  geom_line(size = 1.5)
+
+nrow(STAG_peaks)
+
+
+
+```
 
 
 
