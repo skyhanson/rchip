@@ -527,8 +527,8 @@ extract_peak_view <- function(peaks, promoter) {
 
 profile_tss <- function(peaks, 
                         promoters_gr,
-                        upstream = 3e3,
-                        downstream = 3e3) {
+                        upstream = 1e3,
+                        downstream = 1e3) {
   
   
   peak_coverage <- coverage(peaks)
