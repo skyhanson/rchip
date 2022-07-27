@@ -18,6 +18,180 @@ source("../../util/intersect_functions.R")
 source("../../util/plotting_functions.R")
 ```
 
+First let's look at CTCF to compare the "good" vs "bad" chip
+
+# CTCF (10-20, 20-60 shearing) = "good"
+
+```{r CTCF}
+
+ctcf_peaks <- rtracklayer::import("/scratch/Shares/rinn/JR/rchip/data/1-2-2_nextflow_run_all_samples/results/bwa/mergedLibrary/macs/broadPeak/CTCF_10-20_shearing_R1_peaks.broadPeak")
+
+ctcf_metaplot_df <- data.frame(x = integer(), dens = numeric(), dbp = character())
+ctcf_metaplot_df <- profile_tss(ctcf_peaks , promoters)
+
+# plotting
+ggplot(ctcf_metaplot_df, aes(x = x, y = dens)) + 
+  geom_line(size = 1.5)
+
+# Nice
+length(ctcf_peaks)
+
+
+# CTCF 20-60 shearing
+
+ctcf_20_60 <- rtracklayer::import("/scratch/Shares/rinn/JR/rchip/data/1-2-2_nextflow_run_all_samples/results/bwa/mergedLibrary/macs/broadPeak/CTCF_20-60_shearing_R1_peaks.broadPeak")
+
+# 
+ctcf20_60_metaplot_df <- data.frame(x = integer(), dens = numeric(), dbp = character())
+ctcf20_60_metaplot_df <- profile_tss(ctcf_20_60 , promoters)
+
+# plotting
+ggplot(ctcf20_60_metaplot_df, aes(x = x, y = dens)) + 
+  geom_line(size = 1.5)
+
+
+```
+
+
+# comparing a good CTCF to bad one
+
+```{r CTCF good vs bad}
+
+
+ctcf_peaks <- rtracklayer::import("/scratch/Shares/rinn/JR/rchip/data/1-2-2_nextflow_run_all_samples/results/bwa/mergedLibrary/macs/broadPeak/CTCF_10-20_shearing_R1_peaks.broadPeak")
+
+ctcf_metaplot_df <- data.frame(x = integer(), dens = numeric(), dbp = character())
+ctcf_metaplot_df <- profile_tss(ctcf_peaks , promoters)
+
+# plotting
+ggplot(ctcf_metaplot_df, aes(x = x, y = dens)) + 
+  geom_line(size = 1.5)
+
+
+# bad
+
+ctcf_bad_peaks <- rtracklayer::import("/scratch/Shares/rinn/JR/rchip/data/1-2-2_nextflow_run_all_samples/results/bwa/mergedLibrary/macs/broadPeak/CTCF_no_rnase_R1_peaks.broadPeak")
+
+ctcf_bad_metaplot_df <- data.frame(x = integer(), dens = numeric(), dbp = character())
+ctcf_bad_metaplot_df <- profile_tss(ctcf_bad_peaks , promoters)
+
+# plotting
+ggplot(ctcf_bad_metaplot_df, aes(x = x, y = dens)) + 
+  geom_line(size = 1.5)
+
+
+length(ctcf_bad_peaks)
+
+# compare overlaps with old ctcf and new one
+# plus rnase metaplot and overlaps and good one 
+
+
+
+# plotting them together
+
+ctcf_bad_metaplot_df$quality <- "bad"
+
+ctcf_metaplot_df$quality <- "good"
+
+ctcf_combined_metaplot_profile <- bind_rows(ctcf_bad_metaplot_df, ctcf_metaplot_df)
+
+
+ggplot(ctcf_combined_metaplot_profile, 
+       aes(x = x, y = dens, color = quality)) +
+  geom_vline(xintercept = 0, lty = 2) + 
+  geom_line(size = 1.5) + 
+  ggtitle("CTCF Promoter Metaplot") + 
+  scale_x_continuous(breaks = c(-3000, 0, 3000),
+                     labels = c("-3kb", "TSS", "+3kb"),
+                     name = "") + 
+  ylab("Peak frequency") + 
+  scale_color_manual(values = c("#424242","#a8404c"))
+
+
+# checking num of peaks and overlaps
+length(ctcf_bad_peaks)
+
+# good peaks
+length(ctcf_peaks)
+
+# length of overlap
+ctcf_good_bad_ov <- subsetByOverlaps(ctcf_bad_peaks, ctcf_peaks)
+
+# % overlap
+
+length(ctcf_good_bad_ov)/ length(ctcf_bad_peaks)
+
+```
+
+
+# RBP1
+Trying RBP1 as comparison
+```{r}
+
+# loading in peak file
+
+RBP1_peaks <- rtracklayer::import("/scratch/Shares/rinn/JR/rchip/data/1-2-2_nextflow_run_all_samples/results/bwa/mergedLibrary/macs/broadPeak/RBP1_no_rnase_R1_peaks.broadPeak")
+
+RBP1_metaplot_df <- data.frame(x = integer(), dens = numeric(), dbp = character())
+
+# running profile TSS 
+RBP1_metaplot_df <- profile_tss(RBP1_peaks , promoters)
+
+
+# plotting metaplot
+ggplot(RBP1_metaplot_df, aes(x = x, y = dens)) + 
+  geom_line(size = 1.5)
+
+
+```
+
+
+
+
+SAF-A (130 peaks)
+
+```{r}
+
+# loading in SAFA rep1
+safa_peaks <- rtracklayer::import("/scratch/Shares/rinn/JR/rchip/data/1-2-2_nextflow_run_all_samples/results/bwa/mergedLibrary/macs/broadPeak/SAFA_no_rnase_R1_peaks.broadPeak")
+
+# metaplot_df
+safa_metaplot_df <- data.frame(x = integer(), dens = numeric(), dbp = character())
+safa_metaplot_df <- profile_tss(safa_peaks , promoters)
+
+# plotting
+ggplot(safa_metaplot_df, aes(x = x, y = dens)) + 
+  geom_line(size = 1.5)
+
+# wow that looks really bad
+length(safa_peaks)
+
+
+# trying the other replicate
+
+safa_rnase_peaks <- rtracklayer::import("/scratch/Shares/rinn/JR/rchip/data/1-2-2_nextflow_run_all_samples/results/bwa/mergedLibrary/macs/broadPeak/SAFA_RNAse_R1_peaks.broadPeak")
+
+safa_rnase_metaplot_df <- data.frame(x = integer(), dens = numeric(), dbp = character())
+safa_rnase_metaplot_df <- profile_tss(safa_peaks , promoters)
+
+# plotting
+ggplot(safa_rnase_metaplot_df, aes(x = x, y = dens)) + 
+  geom_line(size = 1.5)
+
+# wow that looks really bad
+length(safa_rnase_peaks)
+
+
+
+```
+
+
+
+# Now for the new candidates: HDAC1, PHF8 and CBX3
+
+
+
+
 First going to encode portal and grabbing latest "consensus peaks" 
 between replicates for each candidate.
 
@@ -102,17 +276,19 @@ ggplot(HDAC1_metaplot_df, aes(x = x, y = dens)) +
 ```{r }
 # Let's get the promoters in the valr format.
 # We'll just get the TSS
-tss <- promoters(gencode_gr[gencode_gr$type == "gene"], upstream = 0, downstream = 0) %>%
-  gr_to_bed()
+promoter_bed <- promoters(gencode_gr[gencode_gr$type == "gene"], upstream = 1000, downstream = 1000) %>%
+  gr_to_bed() %>%
+  mutate(tss = start + ((end-start)/2))
 # We're just going to take the peak center.
 HDAC1_peaks  <- read_bed("data/HDAC1/ENCFF432KJA.bed") %>%
   mutate(peak_center = start + X10)
 
-hdac_tss_ov <- bed_intersect(HDAC1_peaks, tss) %>%
-  mutate(meta_position = peak_center.x - start.y,
+hdac_tss_ov <- bed_intersect(HDAC1_peaks, promoter_bed) %>%
+  mutate(meta_position = peak_center.x - tss.y,
          meta_position = ifelse(strand.y == "-", meta_position * -1, meta_position))
 
 hdac_tss_meta_peak_center <- hdac_tss_ov %>%
+  filter(meta_position >= -1000, meta_position <= 1000) %>%
   group_by(meta_position) %>%
   summarize(npeaks = n())
 
@@ -154,17 +330,18 @@ ggplot(PHF8_metaplot_df, aes(x = x, y = dens)) +
 ```{r valr meta plot PHF8}
 # Let's get the promoters in the valr format.
 # We'll just get the TSS
-tss <- promoters(gencode_gr[gencode_gr$type == "gene"], upstream = 0, downstream = 0) %>%
-  gr_to_bed()
+# tss <- promoters(gencode_gr[gencode_gr$type == "gene"], upstream = 0, downstream = 0) %>%
+#   gr_to_bed()
 # We're just going to take the peak center.
 PHF8_peaks  <- read_bed("data/PHF8/ENCFF981ISM.bed.gz") %>%
   mutate(peak_center = start + X10)
 
-PHF8_tss_ov <- bed_intersect(PHF8_peaks, tss) %>%
-  mutate(meta_position = peak_center.x - start.y,
+PHF8_tss_ov <- bed_intersect(PHF8_peaks, promoter_bed) %>%
+  mutate(meta_position = peak_center.x - tss.y,
          meta_position = ifelse(strand.y == "-", meta_position * -1, meta_position))
 
 PHF8_tss_meta_peak_center <- PHF8_tss_ov %>%
+  filter(meta_position >= -1000, meta_position <= 1000) %>%
   group_by(meta_position) %>%
   summarize(npeaks = n())
 
@@ -173,16 +350,6 @@ ggplot(PHF8_tss_meta_peak_center, aes(x = meta_position, y = npeaks)) +
   geom_smooth(span = 0.2)
 
 ```
-
-
-
-
-
-
-
-
-
-
 
 # Candidate 3 : CBX3
 
@@ -214,185 +381,138 @@ length(CBX3_peaks)
 
 
 
-# trying second replicate
-
-```
-
+# trying second replicate (richard meyers)
+# https://www.encodeproject.org/files/ENCFF386ZWO/@@download/ENCFF386ZWO.bed.gz
 
 
+CBX3_peaks_2 <- read_tsv("/scratch/Shares/rinn/JR/rchip/analysis/00_NEW_candidate_qc/data/CBX3/ENCFF386ZWO.bed.gz", col_names = F)
 
+# adding colnames 
+names(CBX3_peaks_2) <- c('chromosome', 'start', 'end', 'name', 'score', 'strand', 
+                       'signalValue', 'pValue', 'qValue', 'peak_center')
 
+# converting to Granges
+CBX3_gr_2 <- GRanges(CBX3_peaks_2$chromosome, IRanges(CBX3_peaks_2$start, CBX3_peaks_2$end))
 
+# creating metaplot DF and running profile_tss
+CBX3_metaplot_df_2 <- data.frame(x = integer(), dens = numeric(), dbp = character())
+CBX3_metaplot_df_2 <- profile_tss(CBX3_gr_2, promoters)
 
+# plotting
+ggplot(CBX3_metaplot_df_2, aes(x = x, y = dens)) + 
+  geom_line(size = 1.5)
 
+nrow(CBX3_peaks_2)
+# 24,848
 
-
-
-
-
-
-# RBP1
-Trying RBP1 as comparison
-```{r}
-
-# loading in peak file
-
-RBP1_peaks <- rtracklayer::import("/scratch/Shares/rinn/JR/rchip/data/1-2-2_nextflow_run_all_samples/results/bwa/mergedLibrary/macs/broadPeak/RBP1_no_rnase_R1_peaks.broadPeak")
-
-RBP1_metaplot_df <- data.frame(x = integer(), dens = numeric(), dbp = character())
-
-# running profile TSS 
-RBP1_metaplot_df <- profile_tss(RBP1_peaks , promoters)
-
-
-# plotting metaplot
-ggplot(RBP1_metaplot_df, aes(x = x, y = dens)) + 
+# for comparison
+ggplot(CBX3_metaplot_df, aes(x = x, y = dens)) + 
   geom_line(size = 1.5)
 
 
 ```
 
+# Valr metaplot stuff for CBX3
+```{r valr meta plot PHF8}
+# Let's get the promoters in the valr format.
+# We'll just get the TSS
+# Let's look at the 
+# tss <- promoters(gencode_gr[gencode_gr$type == "gene"], upstream = 0, downstream = 0) %>%
+#   gr_to_bed()
+
+# We're just going to take the peak center.
+CBX3_peaks  <- read_bed("data/CBX3/ENCFF068OEJ.bed.gz") %>%
+  mutate(peak_center = start + X10)
+
+# Second replicate
+
+CBX3_peaks_2  <- read_bed("data/CBX3/ENCFF386ZWO.bed.gz") %>%
+  mutate(peak_center = start + X10)
 
 
+# Tss overlap 
+CBX3_tss_ov <- bed_intersect(CBX3_peaks, promoter_bed) %>%
+  mutate(meta_position = peak_center.x - tss.y,
+         meta_position = ifelse(strand.y == "-", meta_position * -1, meta_position))
 
-SAF-A (130 peaks)
+# second replicate
+CBX3_tss_ov_2 <- bed_intersect(CBX3_peaks_2, promoter_bed) %>%
+  mutate(meta_position = peak_center.x - tss.y,
+         meta_position = ifelse(strand.y == "-", meta_position * -1, meta_position)) %>%
+  unite(peak_coord, chrom, start.x, end.x, remove = FALSE)
 
-```{r}
+length(unique(CBX3_tss_ov_2$peak_coord))
 
-# loading in SAFA rep1
-safa_peaks <- rtracklayer::import("/scratch/Shares/rinn/JR/rchip/data/1-2-2_nextflow_run_all_samples/results/bwa/mergedLibrary/macs/broadPeak/SAFA_no_rnase_R1_peaks.broadPeak")
+hmm <- findOverlaps(GRanges(CBX3_peaks_2$chrom, ranges = IRanges(CBX3_peaks_2$start, CBX3_peaks_2$end)), 
+                         GRanges(promoter_bed$chrom, ranges = IRanges(promoter_bed$start, promoter_bed$end)))
 
-# metaplot_df
-safa_metaplot_df <- data.frame(x = integer(), dens = numeric(), dbp = character())
-safa_metaplot_df <- profile_tss(safa_peaks , promoters)
+table(table(hmm@from))
+# summarize
+CBX3_tss_meta_peak_center <- CBX3_tss_ov %>%
+  filter(meta_position >= -1000, meta_position <= 1000) %>%
+  group_by(meta_position) %>%
+  summarize(npeaks = n())
+
+# summarize second rep
+CBX3_tss_meta_peak_center_2 <- CBX3_tss_ov_2 %>%
+  filter(meta_position >= -1000, meta_position <= 1000) %>%
+  group_by(meta_position) %>%
+  summarize(npeaks = n())
 
 # plotting
-ggplot(safa_metaplot_df, aes(x = x, y = dens)) + 
-  geom_line(size = 1.5)
+ggplot(CBX3_tss_meta_peak_center, aes(x = meta_position, y = npeaks)) +
+  geom_point() +
+  geom_smooth(span = 0.2)
 
-# wow that looks really bad
-length(safa_peaks)
+# plotting second rep
 
-
-# trying the other replicate
-
-safa_rnase_peaks <- rtracklayer::import("/scratch/Shares/rinn/JR/rchip/data/1-2-2_nextflow_run_all_samples/results/bwa/mergedLibrary/macs/broadPeak/SAFA_RNAse_R1_peaks.broadPeak")
-
-safa_rnase_metaplot_df <- data.frame(x = integer(), dens = numeric(), dbp = character())
-safa_rnase_metaplot_df <- profile_tss(safa_peaks , promoters)
-
-# plotting
-ggplot(safa_rnase_metaplot_df, aes(x = x, y = dens)) + 
-  geom_line(size = 1.5)
-
-# wow that looks really bad
-length(safa_rnase_peaks)
+ggplot(CBX3_tss_meta_peak_center_2, aes(x = meta_position, y = npeaks)) +
+  geom_point() +
+  geom_smooth(span = 0.2)
 
 
+test <- subsetByOverlaps(GRanges(CBX3_peaks_2$chrom, ranges = IRanges(CBX3_peaks_2$start, CBX3_peaks_2$end)), 
+                         GRanges(promoter_bed$chrom, ranges = IRanges(promoter_bed$start, promoter_bed$end)))
+
+length(test)
+# 6,520 peaks overlap promoters
+
+nrow(CBX3_peaks_2)
+# 24,848
 
 ```
 
-
-
-# CTCF (10-20, 20-60 shearing)
-
-```{r CTCF}
-
-ctcf_peaks <- rtracklayer::import("/scratch/Shares/rinn/JR/rchip/data/1-2-2_nextflow_run_all_samples/results/bwa/mergedLibrary/macs/broadPeak/CTCF_10-20_shearing_R1_peaks.broadPeak")
-
-ctcf_metaplot_df <- data.frame(x = integer(), dens = numeric(), dbp = character())
-ctcf_metaplot_df <- profile_tss(ctcf_peaks , promoters)
-
-# plotting
-ggplot(ctcf_metaplot_df, aes(x = x, y = dens)) + 
-  geom_line(size = 1.5)
-
-# Nice
-length(ctcf_peaks)
-
-
-# CTCF 20-60 shearing
-
-ctcf_20_60 <- rtracklayer::import("/scratch/Shares/rinn/JR/rchip/data/1-2-2_nextflow_run_all_samples/results/bwa/mergedLibrary/macs/broadPeak/CTCF_20-60_shearing_R1_peaks.broadPeak")
-
-# 
-ctcf20_60_metaplot_df <- data.frame(x = integer(), dens = numeric(), dbp = character())
-ctcf20_60_metaplot_df <- profile_tss(ctcf_20_60 , promoters)
-
-# plotting
-ggplot(ctcf20_60_metaplot_df, aes(x = x, y = dens)) + 
-  geom_line(size = 1.5)
-
-
-```
-
-
-# comparing a good CTCF to bad one
-
+# all combined candidate metaplots
 
 ```{r}
 
-# Good
-
-ctcf_peaks <- rtracklayer::import("/scratch/Shares/rinn/JR/rchip/data/1-2-2_nextflow_run_all_samples/results/bwa/mergedLibrary/macs/broadPeak/CTCF_10-20_shearing_R1_peaks.broadPeak")
-
-ctcf_metaplot_df <- data.frame(x = integer(), dens = numeric(), dbp = character())
-ctcf_metaplot_df <- profile_tss(ctcf_peaks , promoters)
-
-# plotting
-ggplot(ctcf_metaplot_df, aes(x = x, y = dens)) + 
-  geom_line(size = 1.5)
-
-
-# bad
-
-ctcf_bad_peaks <- rtracklayer::import("/scratch/Shares/rinn/JR/rchip/data/1-2-2_nextflow_run_all_samples/results/bwa/mergedLibrary/macs/broadPeak/CTCF_no_rnase_R1_peaks.broadPeak")
-
-ctcf_bad_metaplot_df <- data.frame(x = integer(), dens = numeric(), dbp = character())
-ctcf_bad_metaplot_df <- profile_tss(ctcf_bad_peaks , promoters)
-
-# plotting
-ggplot(ctcf_bad_metaplot_df, aes(x = x, y = dens)) + 
-  geom_line(size = 1.5)
-
-
-length(ctcf_bad_peaks)
-
-# compare overlaps with old ctcf and new one
-# plus rnase metaplot and overlaps and good one 
+HDAC1_metaplot_df$dbp <- "HDAC1"
+PHF8_metaplot_df$dbp <- "PHF8"
+CBX3_metaplot_df$dbp <- "CBX3_1"
+CBX3_metaplot_df_2$dbp <- "CBX3_2"
 
 
 
-# plotting them together
 
-ctcf_bad_metaplot_df$quality <- "bad"
-
-ctcf_metaplot_df$quality <- "good"
-
-combined_metaplot_profile <- bind_rows(ctcf_bad_metaplot_df, ctcf_metaplot_df)
+combined_metaplot_profile <- bind_rows(HDAC1_metaplot_df, PHF8_metaplot_df, CBX3_metaplot_df, CBX3_metaplot_df_2 )
 
 
 ggplot(combined_metaplot_profile, 
-       aes(x = x, y = dens, color = quality)) +
+       aes(x = x, y = dens, color = dbp)) +
   geom_vline(xintercept = 0, lty = 2) + 
   geom_line(size = 1.5) + 
-  ggtitle("CTCF Promoter Metaplot") + 
+  ggtitle(" Promoter Metaplot") + 
   scale_x_continuous(breaks = c(-3000, 0, 3000),
                      labels = c("-3kb", "TSS", "+3kb"),
                      name = "") + 
-  ylab("Peak frequency") + 
-  scale_color_manual(values = c("#424242","#a8404c"))
+  ylab("Peak frequency") 
+  # scale_color_manual(values = c("#424242","#a8404c"))
 
-length(ctcf_bad_peaks)
-length(ctcf_peaks)
-
-length(ctcf_good_bad_ov)
-
-
-ctcf_good_bad_ov <- subsetByOverlaps(ctcf_bad_peaks, ctcf_peaks)
 
 
 ```
+
+
 
 
 
