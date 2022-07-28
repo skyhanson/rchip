@@ -49,9 +49,23 @@ ctcf20_60_metaplot_df <- profile_tss(ctcf_20_60 , promoters)
 ggplot(ctcf20_60_metaplot_df, aes(x = x, y = dens)) + 
   geom_line(size = 1.5)
 
-
+# TODO make consensus peaks and replot.
 ```
 
+```{r}
+ctcf_peaks <- read_table("/scratch/Shares/rinn/JR/rchip/data/1-2-2_nextflow_run_all_samples/results/bwa/mergedLibrary/macs/broadPeak/CTCF_10-20_shearing_R1_peaks.broadPeak", col_names = F) %>%
+  mutate(width = X3 - X2)
+
+ggplot(ctcf_peaks, aes(x = log10(width), y = X9)) +
+  geom_point() +
+  ylim(0,200)
+
+ctcf_peaks_bad <- read_table("/scratch/Shares/rinn/JR/rchip/data/1-2-2_nextflow_run_all_samples/results/bwa/mergedLibrary/macs/broadPeak/CTCF_no_rnase_R1_peaks.broadPeak", col_names = F) %>%
+  mutate(width = X3 - X2)
+ggplot(ctcf_peaks_bad, aes(x = log10(width), y = X9)) +
+  geom_point() +
+  ylim(0,200)
+```
 
 # comparing a good CTCF to bad one
 
@@ -181,8 +195,6 @@ ggplot(safa_rnase_metaplot_df, aes(x = x, y = dens)) +
 # wow that looks really bad
 length(safa_rnase_peaks)
 
-
-
 ```
 
 
@@ -270,6 +282,8 @@ HDAC1_metaplot_df <- profile_tss(HDAC1_1_gr , promoters)
 
 ggplot(HDAC1_metaplot_df, aes(x = x, y = dens)) + 
   geom_line(size = 1.5)
+
+length(HDAC1_1_gr)
 ```
 
 # Valr metaplot stuff for HDAC1: Peak center overlaps
@@ -323,7 +337,9 @@ PHF8_metaplot_df <- profile_tss(PHF8_gr, promoters)
 ggplot(PHF8_metaplot_df, aes(x = x, y = dens)) + 
   geom_line(size = 1.5)
 
+length(PHF8_gr)
 
+subsetByOverlaps(PHF8_gr, promoters)
 ```
 
 # Valr metaplot stuff for PHF8
@@ -376,8 +392,10 @@ CBX3_metaplot_df <- profile_tss(CBX3_gr, promoters)
 ggplot(CBX3_metaplot_df, aes(x = x, y = dens)) + 
   geom_line(size = 1.5)
 
-length(CBX3_peaks)
+nrow(CBX3_peaks)
 # only 750 or so peaks 
+
+subsetByOverlaps(CBX3_gr, promoters)
 
 
 
@@ -404,6 +422,8 @@ ggplot(CBX3_metaplot_df_2, aes(x = x, y = dens)) +
 
 nrow(CBX3_peaks_2)
 # 24,848
+
+subsetByOverlaps(CBX3_gr_2, promoters)
 
 # for comparison
 ggplot(CBX3_metaplot_df, aes(x = x, y = dens)) + 
@@ -490,11 +510,12 @@ HDAC1_metaplot_df$dbp <- "HDAC1"
 PHF8_metaplot_df$dbp <- "PHF8"
 CBX3_metaplot_df$dbp <- "CBX3_1"
 CBX3_metaplot_df_2$dbp <- "CBX3_2"
+ctcf_metaplot_df$dbp <- "CTCF"
 
 
 
 
-combined_metaplot_profile <- bind_rows(HDAC1_metaplot_df, PHF8_metaplot_df, CBX3_metaplot_df, CBX3_metaplot_df_2 )
+combined_metaplot_profile <- bind_rows(HDAC1_metaplot_df, PHF8_metaplot_df, CBX3_metaplot_df, CBX3_metaplot_df_2, ctcf_metaplot_df)
 
 
 ggplot(combined_metaplot_profile, 
@@ -540,8 +561,44 @@ ggplot(STAG_metaplot_df, aes(x = x, y = dens)) +
 nrow(STAG_peaks)
 
 
+```
+
+#Rbbp5
+
+```{r}
+
+# wget https://www.encodeproject.org/files/ENCFF666PCE/@@download/ENCFF666PCE.bed.gz
+
+
+ 
+rbbp5_peaks <- read_tsv("/scratch/Shares/rinn/JR/rchip/analysis/00_NEW_candidate_qc/data/rbbp5/ENCFF666PCE.bed.gz", col_names = F)
+
+# adding colnames 
+names(rbbp5_peaks) <- c('chromosome', 'start', 'end', 'name', 'score', 'strand', 
+                       'signalValue', 'pValue', 'qValue', 'peak_center')
+
+# converting to Granges
+rbbp5_gr <- GRanges(rbbp5_peaks$chromosome, IRanges(rbbp5_peaks$start, rbbp5_peaks$end))
+
+# creating metaplot DF and running profile_tss
+rbbp5_metaplot_df <- data.frame(x = integer(), dens = numeric(), dbp = character())
+rbbp5_metaplot_df <- profile_tss(rbbp5_gr, promoters)
+
+# plotting
+ggplot(rbbp5_metaplot_df, aes(x = x, y = dens)) + 
+  geom_line(size = 1.5)
+
+nrow(rbbp5_peaks)
+# only 750 or so peaks 
+
+subsetByOverlaps(rbbp5_gr, promoters)
+
 
 ```
+
+
+
+
 
 
 
