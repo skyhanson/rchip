@@ -24,6 +24,17 @@ First let's look at CTCF to compare the "good" vs "bad" chip
 
 ```{r CTCF}
 
+
+# TODO More analyses per candidate :
+# (1) Feature counts of chip peaks for RNA in frip. 
+# 
+# Check in RDeep for shifting of candidates
+# 
+# Width vs quality: did this and pretty flat across widths (so width doesn't influence peak sig as expected by MACS)
+# 
+# CTCF good vs bad signal/quality vs overlap (not sure super relevant form prelim look)
+
+
 ctcf_peaks <- rtracklayer::import("/scratch/Shares/rinn/JR/rchip/data/1-2-2_nextflow_run_all_samples/results/bwa/mergedLibrary/macs/broadPeak/CTCF_10-20_shearing_R1_peaks.broadPeak")
 
 ctcf_metaplot_df <- data.frame(x = integer(), dens = numeric(), dbp = character())
