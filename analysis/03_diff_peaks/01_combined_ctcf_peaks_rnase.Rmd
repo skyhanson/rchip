@@ -137,9 +137,9 @@ write_rds(ctcf_feature_counts, "results/ctcf_chip_combined_5_reps/CTCF_feature_c
 ```{r running deseq between our CTCF and encode CTCF two replicates each}
 
 # creating a dataframe to be used in Deseq (DESeqDataSetFormMatrix)
-sample_df <- data.frame(filename = colnames(peak_counts)) %>%
+sample_df <- data.frame(filename = colnames(ctcf_feature_counts)) %>%
   # Cleanup colnames from peak_counts
-  mutate(sample_name = filename,
+  mutate(sample_name = filename),
          sample_name = gsub(".bam|.R1.mLb.clN.sorted|.shearing", "", sample_name),
          sample_name = gsub("CTCF.10.20", "rinn.CTCF.rep1", sample_name),
          sample_name = gsub("CTCF.20.60", "rinn.CTCF.rep2", sample_name)) %>%
