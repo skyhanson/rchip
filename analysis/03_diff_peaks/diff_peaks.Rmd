@@ -63,7 +63,7 @@ ${BASE_PATH}/CTCF_20-60_shearing_R1.mLb.clN.sorted.bam \
 -c \
 ${BASE_PATH}/CTCF_10-20_shearing_input_R1.mLb.clN.sorted.bam \
 ${BASE_PATH}/CTCF_20-60_shearing_input_R1.mLb.clN.sorted.bam \
--g hs -n CTCF_chipseq_combined  -q 0.01 --outdir ../results
+-g hs -n CTCF_chipseq_combined  -q 0.01 --outdir ../results/ctcf_wash_rnase
 date
 ```
 
