@@ -3,10 +3,17 @@ title: "01_CTCF_WASH_RNASE"
 author: "JR"
 date: "8/11/2022"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+options(stringsAsFactors = FALSE)
+library(tidyverse)
+library(Rsubread)
+library(rtracklayer)
+library(DESeq2)
 ```
 
 
@@ -65,7 +72,7 @@ date
 # loading in the narrow peak consensus peaks between two CTCF ChIPseq replicates (June 2022)
 # Two inputs compared to two replicates and run on narrow peak instead of NF_CORE output broadPeak
 
-ctcf_peaks <- import("results/CTCF_chipseq_combined_peaks.narrowPeak")
+ctcf_peaks <- import("results/ctcf_chip_combined_5_reps/CTCF_chipseq_combined_peaks.narrowPeak")
 
 # The input to FeatureCounts is .saf (simple annotation file) which will quantify the reads in each peak
 # we need a SAF file needs that requires these colnames:
@@ -85,7 +92,7 @@ ctcf_saf <- ctcf_peaks %>%
     dplyr::select(GeneID, Chr, Start, End, Strand)
 
 # Writting out .saf
-write.table(ctcf_saf, "results/ctcf_peaks_combined.saf", sep = "\t", quote = F, row.names = F)
+write.table(ctcf_saf, "results/ctcf_chip_combined_5_reps/ctcf_peaks_combined.saf", sep = "\t", quote = F, row.names = F)
 
 ```
 
@@ -101,13 +108,13 @@ ctcf_bams <- list.files("data/BAM_files/ctcf", full.names = T)
 # default is single ended but added isPairedEnd parameter to False
 
 ctcf_feature_counts <- featureCounts(files = ctcf_bams,
-                    annot.ext = "results/ctcf_wash_rnase/       ctcf_peaks_combined.saf",
+                    annot.ext = "results/ctcf_chip_combined_5_reps/ctcf_peaks_combined.saf",
                     isPairedEnd = TRUE,
                     nthreads = 6)
 
 
 # saving
-write_rds(peak_counts, "results/CTCF_feature_counts_output.rds")
+write_rds(ctcf_feature_counts, "results/ctcf_chip_combined_5_reps/CTCF_feature_counts_output.rds")
 
 ```
 
