@@ -270,7 +270,12 @@ rnase_input_res <- results(dds_rnase_input, name = "condition_rnase_vs_input", t
 
 ```
 
+# saving env objects
+```{r}
+save(chip_rnase_data, counts_matrix, ctcf_feature_counts, ctcf_peaks, ctcf_saf, rnase_input_res, rnase_res, chip_input_res, sample_df, samples_chip, samples_rnase, samples_rnase_input, file = "results/ctcf_chip_combined_5_reps/ctcf_rnase.RData")
 
+load("results/ctcf_chip_combined_5_reps/ctcf_rnase.RData", verbose = T)
+```
 
 
 
