@@ -119,6 +119,13 @@ write_rds(ctcf_feature_counts, "results/ctcf_chip_combined_5_reps/CTCF_feature_c
 
 ```
 
+# start point (with feature counts)
+```{r}
+
+ctcf_feature_counts <- read_rds("results/ctcf_chip_combined_5_reps/CTCF_feature_counts_output.rds")
+
+```
+
 
 
 
@@ -139,8 +146,8 @@ write_rds(ctcf_feature_counts, "results/ctcf_chip_combined_5_reps/CTCF_feature_c
 
 # creating a dataframe to be used in Deseq (DESeqDataSetFormMatrix)
 sample_df <- data.frame(filename = ctcf_feature_counts[["targets"]]) %>%
-  mutate(sample_name = filename) %>%
-         sample_df$sample_name = gsub(".bam|.mLb.clN.sorted.bam|R1.mLb.clN.sorted.bam", "", sample_df$sample_name) 
+  mutate(sample_name = filename) %>% 
+  sample_df$sample_name = gsub(".bam|.mLb.clN.sorted.bam|R1.mLb.clN.sorted.bam", "",       sample_df$sample_name) 
   
   
   separate(sample_df$sample_name, into = c("experiment", "antibody", "replicate", "condition")) %>%
