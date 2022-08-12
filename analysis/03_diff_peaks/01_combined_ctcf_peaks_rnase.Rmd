@@ -137,12 +137,177 @@ ctcf_feature_counts <- read_rds("results/ctcf_chip_combined_5_reps/CTCF_feature_
 # creating sample_df
 ```{r}
 
+counts_matrix <- ctcf_feature_counts$counts
+
+
+
 sample_df <- data.frame(filename = ctcf_feature_counts[["targets"]]) %>%
   mutate(sample_name = filename)
 
   sample_df$sample_name = gsub(".bam|.mLb.clN.sorted.bam|R1.mLb.clN.sorted.bam", "", sample_df$sample_name) 
+  
+  sample_df <- sample_df %>%
+    mutate(condition = ifelse(grepl("wash", sample_name), "rnase_wash", ifelse(grepl("chip", sample_name), "ctcf_chip", ifelse(grepl("input", sample_name), "input", "rnase"))))
+  
+  samples_rnase <- sample_df %>%
+    filter(condition %in% c("rnase", "ctcf_chip"))
+  
+  rnase_count_matrix <- counts_matrix[, samples_rnase$filename]
+  
+  
+  # factoring for deseq
+  
+  samples_rnase <- samples_rnase %>%
+    mutate(condition = factor(condition, levels = c("ctcf_chip", "rnase")))
+  
+  
+
+  # Deseq
+  dds_rnase <- DESeqDataSetFromMatrix(countData = rnase_count_matrix,
+                              colData = samples_rnase,
+                              # diff on snyder IPs (2) vs rinn IPs (2)
+                              design = ~ condition)
+# Running Deseq
+dds_rnase <- DESeq(dds_rnase)
+
+# getting names
+resultsNames(dds_rnase)
+
+# filter out intercept results
+rnase_res <- results(dds_rnase, name = "condition_rnase_vs_ctcf_chip", tidy = TRUE)
+  
+
+
+ggplot(rnase_res, aes(x = log2FoldChange, y = -log10(pvalue))) +
+         geom_point()
+
+
+
+
+
+```
+
+
+
+```{r}
+
+
+
+
+samples_chip <- sample_df %>%
+    filter(condition %in% c("input", "ctcf_chip"))
+  
+  chip_count_matrix <- counts_matrix[, samples_rnase$filename]
+  
+  
+  # factoring for deseq
+  
+  samples_chip <- samples_rnase %>%
+    mutate(condition = factor(condition, levels = c("input", "ctcf_chip")))
+  
+  
+  
+  # chip 
+dds_chip_input <- DESeqDataSetFromMatrix(countData = chip_count_matrix,
+                              colData = samples_chip,
+                              # diff on snyder IPs (2) vs rinn IPs (2)
+                              design = ~ condition)
+
+dds_chip_input <- DESeq(dds_chip_input)
+
+# getting names
+resultsNames(dds_chip_input)
+
+# filter out intercept results
+chip_input_res <- results(dds_chip_input, name = "condition_ctcf_chip_vs_input", tidy = TRUE)
+  
 
   
+```
+
+
+# Rnase 
+```{r}
+
+samples_rnase_input <- sample_df %>%
+    filter(condition %in% c("input", "rnase"))
+  
+  rnase_input_count_matrix <- counts_matrix[, samples_rnase_input$filename]
+  
+  
+  # factoring for deseq
+  
+  samples_rnase_input <- samples_rnase_input %>%
+    mutate(condition = factor(condition, levels = c("input", "rnase")))
+  
+  
+  
+  # chip 
+dds_rnase_input <- DESeqDataSetFromMatrix(countData = rnase_input_count_matrix,
+                              colData = samples_rnase_input,
+                              # diff on snyder IPs (2) vs rinn IPs (2)
+                              design = ~ condition)
+
+dds_rnase_input <- DESeq(dds_rnase_input)
+
+# getting names
+resultsNames(dds_rnase_input)
+
+# filter out intercept results
+rnase_input_res <- results(dds_rnase_input, name = "condition_rnase_vs_input", tidy = TRUE)
+
+
+
+
+# 
+# colnames(chip_input_res)[1] <- "GeneID"
+# 
+# chip_input_res <- left_join(chip_input_res, ctcf_saf)
+
+
+
+
+
+```
+
+
+
+
+
+
+```{r }
+
+
+chip_rnase_data <- rnase_res %>%
+  dplyr::select(row, log2FoldChange, pvalue) %>%
+  dplyr::rename(l2fc_rnase_vs_chip = log2FoldChange,
+               pvalue_rnase_vs_chip = pvalue) %>%
+  left_join(chip_input_res %>%
+              dplyr::select(row, log2FoldChange, padj) %>%
+              dplyr::rename(l2fc_chip_vs_input = log2FoldChange,
+                            padj_chip_vs_input = padj)) %>%
+  left_join(rnase_input_res %>%
+              dplyr::select(row, log2FoldChange, padj) %>%
+              dplyr::rename(l2fc_rnase_vs_input = log2FoldChange,
+                            padj_rnase_vs_input = padj))
+chip_rnase_data <- chip_rnase_data %>%
+  mutate(sig = pvalue_rnase_vs_chip <= 0.05)
+
+colnames(chip_rnase_data)[1] <- "GeneID"
+
+chip_rnase_data <- left_join(chip_rnase_data, ctcf_saf)
+
+# actually plotting
+ggplot(chip_rnase_data, aes(x = l2fc_chip_vs_input, y = l2fc_rnase_vs_input, color = sig)) +
+  geom_point() +
+  geom_hline(yintercept = 0) +
+  geom_vline(xintercept = 0) +
+  geom_abline(slope = 1)
+
+
+
+
+
 
 
 ```
@@ -153,48 +318,4 @@ sample_df <- data.frame(filename = ctcf_feature_counts[["targets"]]) %>%
 
 
 
-
-
-
-
-
-
-
-
 # (4) Deseq to determine peaks that are differntial between conditions
-```{r running deseq between our CTCF and encode CTCF two replicates each}
-
-# creating a dataframe to be used in Deseq (DESeqDataSetFormMatrix)
-sample_df <- data.frame(filename = ctcf_feature_counts[["targets"]]) %>%
-  mutate(sample_name = filename) %>% 
-  sample_df$sample_name = gsub(".bam|.mLb.clN.sorted.bam|R1.mLb.clN.sorted.bam", "", sample_df$sample_name) 
-sample_df$sample_name = 
-  
-  separate(sample_df$sample_name, into = c("experiment", "antibody", "replicate", "condition")) %>%
-  replace_na(list(condition = "IP"))
-
-# Snyder vs Rinn differential test of IP samples 
-# In the future this will be RNase+ vs RNase-
-# The input is consensus peaks derived from RNase - condition
-sample_df1 <- sample_df %>%
-  filter(experiment %in% c("snyder", "rinn"),
-         condition == "IP") %>%
-  mutate(experiment = factor(experiment, levels = c("rinn", "snyder")))
-
-# indexing peak counts from feature counts to snyder and rinn samples
-peak_counts1 <- peak_counts[,sample_df1$filename]
-
-# setting up experimental design for + or - RNase (currently snyder vs rinn : experiment col)
-dds1 <- DESeqDataSetFromMatrix(countData = peak_counts1,
-                              colData = sample_df1,
-                              # diff on snyder IPs (2) vs rinn IPs (2)
-                              design = ~ experiment)
-# Running Deseq
-dds1 <- DESeq(dds1)
-
-# getting names
-resultsNames(dds1)
-
-# filter out intercept results
-res1 <- results(dds1, name = "experiment_snyder_vs_rinn", tidy = TRUE)
-
