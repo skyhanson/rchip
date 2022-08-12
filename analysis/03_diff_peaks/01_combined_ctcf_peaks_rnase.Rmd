@@ -96,6 +96,13 @@ write.table(ctcf_saf, "results/ctcf_chip_combined_5_reps/ctcf_peaks_combined.saf
 
 ```
 
+# start point (saf file)
+```{r}
+read.table()
+
+```
+
+
 # (3) Run feature counts on all bam files +/- rnase
 # This will provide quntification of reads in each peak in consensus peaks
 # For each sample -- these values can be used as input for deseq below
@@ -127,6 +134,19 @@ ctcf_feature_counts <- read_rds("results/ctcf_chip_combined_5_reps/CTCF_feature_
 ```
 
 
+# creating sample_df
+```{r}
+
+sample_df <- data.frame(filename = ctcf_feature_counts[["targets"]]) %>%
+  mutate(sample_name = filename)
+
+  sample_df$sample_name = gsub(".bam|.mLb.clN.sorted.bam|R1.mLb.clN.sorted.bam", "", sample_df$sample_name) 
+
+  
+
+
+```
+
 
 
 
@@ -147,8 +167,8 @@ ctcf_feature_counts <- read_rds("results/ctcf_chip_combined_5_reps/CTCF_feature_
 # creating a dataframe to be used in Deseq (DESeqDataSetFormMatrix)
 sample_df <- data.frame(filename = ctcf_feature_counts[["targets"]]) %>%
   mutate(sample_name = filename) %>% 
-  sample_df$sample_name = gsub(".bam|.mLb.clN.sorted.bam|R1.mLb.clN.sorted.bam", "",       sample_df$sample_name) 
-  
+  sample_df$sample_name = gsub(".bam|.mLb.clN.sorted.bam|R1.mLb.clN.sorted.bam", "", sample_df$sample_name) 
+sample_df$sample_name = 
   
   separate(sample_df$sample_name, into = c("experiment", "antibody", "replicate", "condition")) %>%
   replace_na(list(condition = "IP"))
