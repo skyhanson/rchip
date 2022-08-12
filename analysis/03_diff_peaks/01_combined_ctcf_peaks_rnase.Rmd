@@ -116,6 +116,7 @@ ctcf_feature_counts <- featureCounts(files = ctcf_bams,
 # saving
 write_rds(ctcf_feature_counts, "results/ctcf_chip_combined_5_reps/CTCF_feature_counts_output.rds")
 
+
 ```
 
 
@@ -137,13 +138,12 @@ write_rds(ctcf_feature_counts, "results/ctcf_chip_combined_5_reps/CTCF_feature_c
 ```{r running deseq between our CTCF and encode CTCF two replicates each}
 
 # creating a dataframe to be used in Deseq (DESeqDataSetFormMatrix)
-sample_df <- data.frame(filename = colnames(ctcf_feature_counts)) %>%
-  # Cleanup colnames from peak_counts
-  mutate(sample_name = filename),
-         sample_name = gsub(".bam|.R1.mLb.clN.sorted|.shearing", "", sample_name),
-         sample_name = gsub("CTCF.10.20", "rinn.CTCF.rep1", sample_name),
-         sample_name = gsub("CTCF.20.60", "rinn.CTCF.rep2", sample_name)) %>%
-  separate(sample_name, into = c("experiment", "antibody", "replicate", "condition")) %>%
+sample_df <- data.frame(filename = ctcf_feature_counts[["targets"]]) %>%
+  mutate(sample_name = filename) %>%
+         sample_df$sample_name = gsub(".bam|.mLb.clN.sorted.bam|R1.mLb.clN.sorted.bam", "", sample_df$sample_name) 
+  
+  
+  separate(sample_df$sample_name, into = c("experiment", "antibody", "replicate", "condition")) %>%
   replace_na(list(condition = "IP"))
 
 # Snyder vs Rinn differential test of IP samples 
