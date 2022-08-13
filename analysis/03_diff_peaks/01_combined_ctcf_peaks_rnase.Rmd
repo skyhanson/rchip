@@ -318,8 +318,10 @@ ggplot(chip_rnase_data, aes(x = l2fc_chip_vs_input, y = l2fc_rnase_vs_input, col
   geom_point() +
   geom_hline(yintercept = 0) +
   geom_vline(xintercept = 0) +
-  geom_abline(slope = 1) 
-  # theme("theme_paperwhite")
+  geom_abline(slope = 1) +
+  
+  # TODO why this doesn't make nice colors :)
+   theme_paperwhite()
 
 ggsave("figures/CTCF_rchip_result.pdf")
 
