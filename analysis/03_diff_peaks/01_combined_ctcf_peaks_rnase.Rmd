@@ -169,23 +169,20 @@ counts_matrix <- ctcf_feature_counts$counts
 
 # ChIP +/- comparison
 samples_rnase <- sample_df %>%
-    filter(condition %in% c("rnase", "ctcf_chip"))
+  filter(condition %in% c("rnase", "ctcf_chip"))
 
 # subsetting counts matrix
-  rnase_count_matrix <- counts_matrix[, samples_rnase$filename]
-  
-# factoring for deseq
-  
-  samples_rnase <- samples_rnase %>%
-    mutate(condition = factor(condition, levels = c("ctcf_chip", "rnase")))
-  
-  
+rnase_count_matrix <- counts_matrix[, samples_rnase$filename]
 
-  # Deseq
-  dds_rnase <- DESeqDataSetFromMatrix(countData = rnase_count_matrix,
-                              colData = samples_rnase,
-                              # diff on snyder IPs (2) vs rinn IPs (2)
-                              design = ~ condition)
+# factoring for deseq (+rnase/-rnase)
+samples_rnase <- samples_rnase %>%
+  mutate(condition = factor(condition, levels = c("ctcf_chip", "rnase")))
+
+# Deseq
+dds_rnase <-
+  DESeqDataSetFromMatrix(countData = rnase_count_matrix,
+                         colData = samples_rnase,
+                         design = ~ condition)
 # Running Deseq
 dds_rnase <- DESeq(dds_rnase)
 
@@ -193,105 +190,93 @@ dds_rnase <- DESeq(dds_rnase)
 resultsNames(dds_rnase)
 
 # filter out intercept results
-rnase_res <- results(dds_rnase, name = "condition_rnase_vs_ctcf_chip", tidy = TRUE)
-  
+rnase_res <-
+  results(dds_rnase, name = "condition_rnase_vs_ctcf_chip", tidy = TRUE)
 
-
+# volcano plot +/- RNase ChIP
 ggplot(rnase_res, aes(x = log2FoldChange, y = -log10(pvalue))) +
-         geom_point()
+  geom_point()
 
-
-
-
-
+# saving
+ggsave("figures/chip_plus_minus_rnase_volcano.pdf")
 ```
 
 # (ii) chip -vs input
-# (iii) rnase -vs input
-```{r}
 
-```
+```{r chip vs input}
 
-
-
-
-```{r}
-
-
-
-
+# subsetting chip samples and input
 samples_chip <- sample_df %>%
-    filter(condition %in% c("input", "ctcf_chip"))
-  
-  chip_count_matrix <- counts_matrix[, samples_rnase$filename]
-  
-  
-  # factoring for deseq
-  
-  samples_chip <- samples_rnase %>%
-    mutate(condition = factor(condition, levels = c("input", "ctcf_chip")))
-  
-  
-  
-  # chip 
-dds_chip_input <- DESeqDataSetFromMatrix(countData = chip_count_matrix,
-                              colData = samples_chip,
-                              # diff on snyder IPs (2) vs rinn IPs (2)
-                              design = ~ condition)
+  filter(condition %in% c("input", "ctcf_chip"))
 
+# subsetting counts matrix to chip and input
+chip_count_matrix <- counts_matrix[, samples_chip$filename]
+
+
+# factoring for deseq (chip/input)
+samples_chip <- samples_chip %>%
+  mutate(condition = factor(condition, levels = c("input", "ctcf_chip")))
+
+# chip Deseq matrix input
+dds_chip_input <-
+  DESeqDataSetFromMatrix(countData = chip_count_matrix,
+                         colData = samples_chip,
+                         design = ~ condition)
+
+# running Deseq
 dds_chip_input <- DESeq(dds_chip_input)
 
 # getting names
 resultsNames(dds_chip_input)
 
 # filter out intercept results
-chip_input_res <- results(dds_chip_input, name = "condition_ctcf_chip_vs_input", tidy = TRUE)
-  
+chip_input_res <-
+  results(dds_chip_input, name = "condition_ctcf_chip_vs_input", tidy = TRUE)
 
-  
+# volcano plot  ChIP / input
+ggplot(chip_input_res, aes(x = log2FoldChange, y = -log10(pvalue))) +
+  geom_point()
+
+# saving
+ggsave("figures/chip_input_volcano.pdf")
+
 ```
 
+# (iii) rnase -vs input
+```{r deseq on +rnase chip vs input}
 
-# Rnase 
-```{r}
-
+# subsetting to +Rnase chip and input
 samples_rnase_input <- sample_df %>%
-    filter(condition %in% c("input", "rnase"))
-  
-  rnase_input_count_matrix <- counts_matrix[, samples_rnase_input$filename]
-  
-  
-  # factoring for deseq
-  
-  samples_rnase_input <- samples_rnase_input %>%
-    mutate(condition = factor(condition, levels = c("input", "rnase")))
-  
-  
-  
-  # chip 
-dds_rnase_input <- DESeqDataSetFromMatrix(countData = rnase_input_count_matrix,
-                              colData = samples_rnase_input,
-                              # diff on snyder IPs (2) vs rinn IPs (2)
-                              design = ~ condition)
+  filter(condition %in% c("input", "rnase"))
 
+# subsetting counts matrix
+rnase_input_count_matrix <-
+  counts_matrix[, samples_rnase_input$filename]
+
+# factoring for deseq
+
+samples_rnase_input <- samples_rnase_input %>%
+  mutate(condition = factor(condition, levels = c("input", "rnase")))
+
+# setting up deseq +rnase chip/ input
+dds_rnase_input <-
+  DESeqDataSetFromMatrix(countData = rnase_input_count_matrix,
+                         colData = samples_rnase_input,
+                         design = ~ condition)
+
+# running Deseq
 dds_rnase_input <- DESeq(dds_rnase_input)
 
 # getting names
 resultsNames(dds_rnase_input)
 
 # filter out intercept results
-rnase_input_res <- results(dds_rnase_input, name = "condition_rnase_vs_input", tidy = TRUE)
+rnase_input_res <-
+  results(dds_rnase_input, name = "condition_rnase_vs_input", tidy = TRUE)
 
-
-
-
-# 
-# colnames(chip_input_res)[1] <- "GeneID"
-# 
-# chip_input_res <- left_join(chip_input_res, ctcf_saf)
-
-
-
+# volcano plot  +rnase_ChIP / input
+ggplot(rnase_input_res, aes(x = log2FoldChange, y = -log10(pvalue))) +
+  geom_point()
 
 
 ```
@@ -299,10 +284,11 @@ rnase_input_res <- results(dds_rnase_input, name = "condition_rnase_vs_input", t
 
 
 
+# Subselecting Deseq results from the three conditions:
+```{r selecting cols from each result }
 
-
-```{r }
-
+# starting with rnase/chip results - renaming and merging together
+# with chip/input and rnase/input results.
 
 chip_rnase_data <- rnase_res %>%
   dplyr::select(row, log2FoldChange, pvalue) %>%
@@ -316,11 +302,15 @@ chip_rnase_data <- rnase_res %>%
               dplyr::select(row, log2FoldChange, padj) %>%
               dplyr::rename(l2fc_rnase_vs_input = log2FoldChange,
                             padj_rnase_vs_input = padj))
+
+# creating a significant col with mutate
 chip_rnase_data <- chip_rnase_data %>%
   mutate(sig = pvalue_rnase_vs_chip <= 0.05)
 
+# chaging row to GeneID to merge with SAF
 colnames(chip_rnase_data)[1] <- "GeneID"
 
+# merging with CTCF SAF to get peak coordinates
 chip_rnase_data <- left_join(chip_rnase_data, ctcf_saf)
 
 # actually plotting
@@ -328,20 +318,13 @@ ggplot(chip_rnase_data, aes(x = l2fc_chip_vs_input, y = l2fc_rnase_vs_input, col
   geom_point() +
   geom_hline(yintercept = 0) +
   geom_vline(xintercept = 0) +
-  geom_abline(slope = 1)
+  geom_abline(slope = 1) 
+  # theme("theme_paperwhite")
 
-
-
-
-
+ggsave("figures/CTCF_rchip_result.pdf")
 
 
 ```
 
 
 
-
-
-
-
-# (4) Deseq to determine peaks that are differntial between conditions
