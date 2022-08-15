@@ -281,10 +281,91 @@ ggplot(rnase_input_res, aes(x = log2FoldChange, y = -log10(pvalue))) +
 
 ```
 
+# (iv) Rnase wash -vs- chip
+```{r rnase_wash_vs_chip}
+
+# getting the counts matrix from feature counts output
+counts_matrix <- ctcf_feature_counts$counts
+
+# ChIP +/- comparison
+samples_wash_rnase <- sample_df %>%
+  filter(condition %in% c("rnase_wash", "ctcf_chip"))
+
+# subsetting counts matrix
+wash_rnase_count_matrix <- counts_matrix[, samples_wash_rnase$filename]
+
+# factoring for deseq (+rnase/-rnase)
+samples_rnase <- samples_wash_rnase %>%
+  mutate(condition = factor(condition, levels = c("ctcf_chip", "rnase_wash")))
+
+# Deseq
+dds_wash_rnase <-
+  DESeqDataSetFromMatrix(countData = wash_rnase_count_matrix,
+                         colData = samples_rnase,
+                         design = ~ condition)
+# Running Deseq
+dds_wash_rnase <- DESeq(dds_wash_rnase)
+
+# getting names
+resultsNames(dds_wash_rnase)
+
+# filter out intercept results
+wash_rnase_res <-
+  results(dds_wash_rnase, name = "condition_rnase_wash_vs_ctcf_chip", tidy = TRUE)
+
+# volcano plot +/- RNase ChIP
+ggplot(wash_rnase_res, aes(x = log2FoldChange, y = -log10(pvalue))) +
+  geom_point()
+
+# saving
+ggsave("figures/wash_rnase_volcano.pdf")
+
+
+```
+
+# rnase_wash_vs_input
+```{r}
+
+
+# getting the counts matrix from feature counts output
+counts_matrix <- ctcf_feature_counts$counts
+
+# ChIP +/- comparison
+samples_wash_rnase_input <- sample_df %>%
+  filter(condition %in% c("rnase_wash", "input"))
+
+# subsetting counts matrix
+wash_rnase_input_count_matrix <- counts_matrix[, samples_wash_rnase_input$filename]
+
+# factoring for deseq (+rnase/-rnase)
+samples_wash_rnase_input <- samples_wash_rnase_input %>%
+  mutate(condition = factor(condition, levels = c("input", "rnase_wash")))
+
+# Deseq
+dds_wash_rnase_input <-
+  DESeqDataSetFromMatrix(countData = wash_rnase_input_count_matrix,
+                         colData = samples_wash_rnase_input,
+                         design = ~ condition)
+# Running Deseq
+dds_wash_rnase_input <- DESeq(dds_wash_rnase_input)
+
+# getting names
+resultsNames(dds_wash_rnase_input)
+
+# filter out intercept results
+wash_rnase_input_res <-
+  results(dds_wash_rnase_input, name = "condition_rnase_wash_vs_input", tidy = TRUE)
+
+
+```
 
 
 
-# Subselecting Deseq results from the three conditions:
+# ChIP +/- Rnase comparison
+# Subselecting Deseq results from three conditions:
+(i) RNase-chip -vs- chip
+(ii) chip/input
+(iii) rnase/input
 ```{r selecting cols from each result }
 
 # starting with rnase/chip results - renaming and merging together
@@ -328,5 +409,49 @@ ggsave("figures/CTCF_rchip_result.pdf")
 
 ```
 
+
+# chip vs rnase_wash condition
+# Plotting log2FC rnase_wash/input, vs chip/input color = sig wash_rnase/chip
+```{r chip vs rnase_wash}
+
+chip_wash_rnase_data <- wash_rnase_res %>%
+  dplyr::select(row, log2FoldChange, pvalue) %>%
+  dplyr::rename(l2fc_wash_rnase_vs_chip = log2FoldChange,
+               pvalue_wash_rnase_vs_chip = pvalue) %>%
+  left_join(chip_input_res %>%
+              dplyr::select(row, log2FoldChange, padj) %>%
+              dplyr::rename(l2fc_chip_vs_input = log2FoldChange,
+                            padj_chip_vs_input = padj)) %>%
+  left_join(wash_rnase_input_res %>%
+              dplyr::select(row, log2FoldChange, padj) %>%
+              dplyr::rename(l2fc_wash_rnase_vs_input = log2FoldChange,
+                            padj_wash_rnase_vs_input = padj))
+
+# creating a significant col with mutate
+chip_wash_rnase_data <- chip_wash_rnase_data %>%
+  mutate(sig = pvalue_wash_rnase_vs_chip <= 0.05)
+
+# chaging row to GeneID to merge with SAF
+colnames(chip_wash_rnase_data)[1] <- "GeneID"
+
+# merging with CTCF SAF to get peak coordinates
+chip_wash_rnase_data <- left_join(chip_wash_rnase_data, ctcf_saf)
+
+
+# actually plotting
+ggplot(chip_wash_rnase_data, aes(x = l2fc_chip_vs_input, y = l2fc_wash_rnase_vs_input, color = sig)) +
+  geom_point() +
+  geom_hline(yintercept = 0) +
+  geom_vline(xintercept = 0) +
+  geom_abline(slope = 1) +
+  
+  # TODO why this doesn't make nice colors :)
+   theme_paperwhite()
+
+ggsave("figures/wash_rnase_vs_chip.pdf")
+
+
+
+```
 
 
