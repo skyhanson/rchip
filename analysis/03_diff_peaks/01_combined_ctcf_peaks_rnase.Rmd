@@ -21,6 +21,8 @@ source("../../util/_setup.R")
 # (1) run macs in bin dir
 ```{bash}
 
+sky
+
 #!/bin/bash
 #SBATCH -p short
 #SBATCH --job-name=CTCF_macs
