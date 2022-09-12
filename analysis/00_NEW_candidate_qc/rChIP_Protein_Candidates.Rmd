@@ -4,6 +4,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
+
 knitr::opts_chunk$set(echo = TRUE)
 options(stringsAsFactors = F)
 library(GenomicRanges)
@@ -62,7 +63,7 @@ rbfox2_gr <- GRanges(rbfox2_peaks$chromosome, IRanges(rbfox2_peaks$start, rbfox2
 rbfox2_metaplot_df <- data.frame(x = integer(), dens = numeric(), dbp = character())
 rbfox2_metaplot_df <- profile_tss(rbfox2_gr, promoters)
 # plotting
-ggplot(rbfox2_metaplot_df, aes(x = x, y = dens)) +
+rbfox2_graph <- ggplot(rbfox2_metaplot_df, aes(x = x, y = dens)) +
   geom_line(size = 1.5)
 
 nrow(rbfox2_peaks)
