@@ -1,6 +1,8 @@
 ---
 title: "peak_analysis"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -23,30 +25,6 @@ promoters <- promoters(gencode_gr[gencode_gr$type == "gene"], upstream = 1000, d
 ```
 
 
-```{r}
-#HNRPK
-#do the wget in the terminal to get the file from encode (get link from encode site, copy the download button link)
-# wget https://www.encodeproject.org/files/ENCFF924FYI/@@download/ENCFF505RNR.bed.gz
-
-hnrpk_peaks <- read_tsv("/scratch/Shares/rinn/Sky/rchip/analysis/00_NEW_candidate_qc/data_files/HNRPK/ENCFF505RNR.bed.gz", col_names = F)
-names(hnrpk_peaks) <- c('chromosome', 'start', 'end', 'name', 'score', 'strand',
-                       'signalValue', 'pValue', 'qValue', 'peak_center')
-write.csv(hnrpk_peaks,"/scratch/Shares/rinn/Sky/rchip/analysis/00_NEW_candidate_qc/EWSR1_examination/hnrpk_peaks_ENCFF505RNR.csv",row.names = TRUE)
-
-# converting to Granges
-hnrpk_gr <- GRanges(hnrpk_peaks$chromosome, IRanges(hnrpk_peaks$start, hnrpk_peaks$end))
-# creating metaplot DF and running profile_tss
-hnrpk_metaplot_df <- data.frame(x = integer(), dens = numeric(), dbp = character())
-hnrpk_metaplot_df <- profile_tss(hnrpk_gr, promoters)
-# plotting
-ggplot(hnrpk_metaplot_df, aes(x = x, y = dens)) +
-  geom_line(size = 1.5)
-
-nrow(hnrpk_peaks)
-# 12324 peaks
-
-subsetByOverlaps(hnrpk_gr, promoters)
-```
 ```{r}
 #KDM1A = LSD1
 #do the wget in the terminal to get the file from encode (get link from encode site, copy the download button link)
@@ -98,6 +76,7 @@ nrow(phf8_peaks)
 subsetByOverlaps(phf8_gr, promoters)
 # 20020
 ```
+
 ```{r}
 #DNMT1
 #do the wget in the terminal to get the file from encode (get link from encode site, copy the download button link)
@@ -150,6 +129,7 @@ nrow(chd1_peaks)
 subsetByOverlaps(chd1_gr, promoters)
 # 466
 ```
+
 ```{r}
 #CHD1 
 #do the wget in the terminal to get the file from encode (get link from encode site, copy the download button link)
