@@ -24,155 +24,6 @@ promoters <- promoters(gencode_gr[gencode_gr$type == "gene"], upstream = 1000, d
 
 
 ```{r}
-#EWSR1 ChIP
-#do the wget in the terminal to get the file from encode (get link from encode site, copy the download button link)
-# wget https://www.encodeproject.org/files/ENCFF924FYI/@@download/ENCFF924FYI.bed.gz
-#There is only one replicate
-ewsr1_peaks <- read_tsv("/scratch/Shares/rinn/Sky/rchip/analysis/00_NEW_candidate_qc/data_files/EWSR1/ENCFF924FYI.bed.gz", col_names = F)
-names(ewsr1_peaks) <- c('chromosome', 'start', 'end', 'name', 'score', 'strand',
-                       'signalValue', 'pValue', 'qValue', 'peak_center')
-write.csv(ewsr1_peaks,"/scratch/Shares/rinn/Sky/rchip/analysis/00_NEW_candidate_qc/EWSR1_examination/ewsr1_peaks_ENCFF924FYI.csv",row.names = TRUE)
-#1264 peaks as a heads up
-# converting to Granges
-ewsr1_gr <- GRanges(ewsr1_peaks$chromosome, IRanges(ewsr1_peaks$start, ewsr1_peaks$end))
-# creating metaplot DF and running profile_tss
-ewsr1_metaplot_df <- data.frame(x = integer(), dens = numeric(), dbp = character())
-ewsr1_metaplot_df <- profile_tss(ewsr1_gr, promoters)
-# plotting
-ggplot(ewsr1_metaplot_df, aes(x = x, y = dens)) +
-  geom_line(size = 1.5)
-nrow(ewsr1_peaks)
-# only 750 or so peaks
-subsetByOverlaps(ewsr1_gr, promoters)
-
-```
-
-```{r}
-#RBFOX2
-#do the wget in the terminal to get the file from encode (get link from encode site, copy the download button link)
-# wget https://www.encodeproject.org/files/ENCFF924FYI/@@download/ENCFF924FYI.bed.gz
-
-rbfox2_peaks <- read_tsv("/scratch/Shares/rinn/Sky/rchip/analysis/00_NEW_candidate_qc/data_files/RBFOX2/ENCFF538ACI.bed.gz", col_names = F)
-names(rbfox2_peaks) <- c('chromosome', 'start', 'end', 'name', 'score', 'strand',
-                       'signalValue', 'pValue', 'qValue', 'peak_center')
-write.csv(rbfox2_peaks,"/scratch/Shares/rinn/Sky/rchip/analysis/00_NEW_candidate_qc/EWSR1_examination/rbfox2_peaks_ENCFF538ACI.csv",row.names = TRUE)
-
-# converting to Granges
-rbfox2_gr <- GRanges(rbfox2_peaks$chromosome, IRanges(rbfox2_peaks$start, rbfox2_peaks$end))
-# creating metaplot DF and running profile_tss
-rbfox2_metaplot_df <- data.frame(x = integer(), dens = numeric(), dbp = character())
-rbfox2_metaplot_df <- profile_tss(rbfox2_gr, promoters)
-# plotting
-rbfox2_graph <- ggplot(rbfox2_metaplot_df, aes(x = x, y = dens)) +
-  geom_line(size = 1.5)
-
-nrow(rbfox2_peaks)
-# 57071 peaks
-
-subsetByOverlaps(rbfox2_gr, promoters)
-```
-
-```{r}
-#RBM22
-#do the wget in the terminal to get the file from encode (get link from encode site, copy the download button link)
-# wget https://www.encodeproject.org/files/ENCFF924FYI/@@download/ENCFF924FYI.bed.gz
-
-rbm22_peaks <- read_tsv("/scratch/Shares/rinn/Sky/rchip/analysis/00_NEW_candidate_qc/data_files/RBM22/ENCFF987DPX.bed.gz", col_names = F)
-names(rbm22_peaks) <- c('chromosome', 'start', 'end', 'name', 'score', 'strand',
-                       'signalValue', 'pValue', 'qValue', 'peak_center')
-write.csv(rbm22_peaks,"/scratch/Shares/rinn/Sky/rchip/analysis/00_NEW_candidate_qc/EWSR1_examination/rbm22_peaks_ENCFF987DPX.csv",row.names = TRUE)
-
-# converting to Granges
-rbm22_gr <- GRanges(rbm22_peaks$chromosome, IRanges(rbm22_peaks$start, rbm22_peaks$end))
-# creating metaplot DF and running profile_tss
-rbm22_metaplot_df <- data.frame(x = integer(), dens = numeric(), dbp = character())
-rbm22_metaplot_df <- profile_tss(rbm22_gr, promoters)
-# plotting
-ggplot(rbm22_metaplot_df, aes(x = x, y = dens)) +
-  geom_line(size = 1.5)
-
-nrow(rbm22_peaks)
-# 12852 peaks
-
-subsetByOverlaps(rbm22_gr, promoters)
-```
-
-
-```{r}
-#KHSRP
-#do the wget in the terminal to get the file from encode (get link from encode site, copy the download button link)
-# wget https://www.encodeproject.org/files/ENCFF924FYI/@@download/ENCFF924FYI.bed.gz
-
-khsrp_peaks <- read_tsv("/scratch/Shares/rinn/Sky/rchip/analysis/00_NEW_candidate_qc/data_files/KHSRP/ENCFF525XXS.bed.gz", col_names = F)
-names(khsrp_peaks) <- c('chromosome', 'start', 'end', 'name', 'score', 'strand',
-                       'signalValue', 'pValue', 'qValue', 'peak_center')
-write.csv(khsrp_peaks,"/scratch/Shares/rinn/Sky/rchip/analysis/00_NEW_candidate_qc/EWSR1_examination/khsrp_peaks_ENCFF525XXS.csv",row.names = TRUE)
-
-# converting to Granges
-khsrp_gr <- GRanges(khsrp_peaks$chromosome, IRanges(khsrp_peaks$start, khsrp_peaks$end))
-# creating metaplot DF and running profile_tss
-khsrp_metaplot_df <- data.frame(x = integer(), dens = numeric(), dbp = character())
-khsrp_metaplot_df <- profile_tss(khsrp_gr, promoters)
-# plotting
-ggplot(khsrp_metaplot_df, aes(x = x, y = dens)) +
-  geom_line(size = 1.5)
-
-nrow(khsrp_peaks)
-# 4094 peaks
-
-subsetByOverlaps(khsrp_gr, promoters)
-```
-```{r}
-#SFPQ
-#do the wget in the terminal to get the file from encode (get link from encode site, copy the download button link)
-# wget https://www.encodeproject.org/files/ENCFF924FYI/@@download/ENCFF924FYI.bed.gz
-
-sfpq_peaks <- read_tsv("/scratch/Shares/rinn/Sky/rchip/analysis/00_NEW_candidate_qc/data_files/SRPQ/ENCFF652ZEN.bed.gz", col_names = F)
-names(sfpq_peaks) <- c('chromosome', 'start', 'end', 'name', 'score', 'strand',
-                       'signalValue', 'pValue', 'qValue', 'peak_center')
-write.csv(sfpq_peaks,"/scratch/Shares/rinn/Sky/rchip/analysis/00_NEW_candidate_qc/EWSR1_examination/sfpq_peaks_ENCFF652ZEN.csv",row.names = TRUE)
-
-# converting to Granges
-sfpq_gr <- GRanges(sfpq_peaks$chromosome, IRanges(sfpq_peaks$start, sfpq_peaks$end))
-# creating metaplot DF and running profile_tss
-sfpq_metaplot_df <- data.frame(x = integer(), dens = numeric(), dbp = character())
-sfpq_metaplot_df <- profile_tss(sfpq_gr, promoters)
-# plotting
-ggplot(sfpq_metaplot_df, aes(x = x, y = dens)) +
-  geom_line(size = 1.5)
-
-nrow(sfpq_peaks)
-# 237 peaks
-
-subsetByOverlaps(sfpq_gr, promoters)
-```
-
-
-```{r}
-#XRCC5
-#do the wget in the terminal to get the file from encode (get link from encode site, copy the download button link)
-# wget https://www.encodeproject.org/files/ENCFF924FYI/@@download/ENCFF924FYI.bed.gz
-
-xrcc5_peaks <- read_tsv("/scratch/Shares/rinn/Sky/rchip/analysis/00_NEW_candidate_qc/data_files/XRCC5/ENCFF708IYN.bed.gz", col_names = F)
-names(xrcc5_peaks) <- c('chromosome', 'start', 'end', 'name', 'score', 'strand',
-                       'signalValue', 'pValue', 'qValue', 'peak_center')
-write.csv(xrcc5_peaks,"/scratch/Shares/rinn/Sky/rchip/analysis/00_NEW_candidate_qc/EWSR1_examination/xrcc5_peaks_ENCFF708IYN.csv",row.names = TRUE)
-
-# converting to Granges
-xrcc5_gr <- GRanges(xrcc5_peaks$chromosome, IRanges(xrcc5_peaks$start, xrcc5_peaks$end))
-# creating metaplot DF and running profile_tss
-xrcc5_metaplot_df <- data.frame(x = integer(), dens = numeric(), dbp = character())
-xrcc5_metaplot_df <- profile_tss(xrcc5_gr, promoters)
-# plotting
-ggplot(xrcc5_metaplot_df, aes(x = x, y = dens)) +
-  geom_line(size = 1.5)
-
-nrow(xrcc5_peaks)
-# 12294 peaks
-
-subsetByOverlaps(xrcc5_gr, promoters)
-```
-```{r}
 #HNRPK
 #do the wget in the terminal to get the file from encode (get link from encode site, copy the download button link)
 # wget https://www.encodeproject.org/files/ENCFF924FYI/@@download/ENCFF505RNR.bed.gz
@@ -195,5 +46,133 @@ nrow(hnrpk_peaks)
 # 12324 peaks
 
 subsetByOverlaps(hnrpk_gr, promoters)
+```
+```{r}
+#KDM1A = LSD1
+#do the wget in the terminal to get the file from encode (get link from encode site, copy the download button link)
+# wget https://www.encodeproject.org/files/ENCFF924FYI/@@download/ENCFF505RNR.bed.gz
+
+kdm1a_peaks <- read_tsv("/scratch/Shares/rinn/Sky/rchip/analysis/00_NEW_candidate_qc/data_files/KDM1A/ENCFF829FZW.bed.gz", col_names = F)
+names(kdm1a_peaks) <- c('chromosome', 'start', 'end', 'name', 'score', 'strand',
+                       'signalValue', 'pValue', 'qValue', 'peak_center')
+write.csv(kdm1a_peaks,"/scratch/Shares/rinn/Sky/rchip/analysis/00_NEW_candidate_qc/csv_files_primers/kdm1a_peaks_ENCFF829FZW.csv",row.names = TRUE)
+
+# converting to Granges
+kdm1a_gr <- GRanges(kdm1a_peaks$chromosome, IRanges(kdm1a_peaks$start, kdm1a_peaks$end))
+# creating metaplot DF and running profile_tss
+kdm1a_metaplot_df <- data.frame(x = integer(), dens = numeric(), dbp = character())
+kdm1a_metaplot_df <- profile_tss(kdm1a_gr, promoters)
+# plotting
+ggplot(kdm1a_metaplot_df, aes(x = x, y = dens)) +
+  geom_line(size = 1.5)
+
+nrow(kdm1a_peaks)
+# 31135 peaks
+
+subsetByOverlaps(kdm1a_gr, promoters)
+# 4541
+```
+
+```{r}
+#PHF8
+#do the wget in the terminal to get the file from encode (get link from encode site, copy the download button link)
+# wget https://www.encodeproject.org/files/ENCFF924FYI/@@download/ENCFF505RNR.bed.gz
+
+phf8_peaks <- read_tsv("/scratch/Shares/rinn/Sky/rchip/analysis/00_NEW_candidate_qc/data_files/PHF8/ENCFF981ISM.bed.gz", col_names = F)
+names(phf8_peaks) <- c('chromosome', 'start', 'end', 'name', 'score', 'strand',
+                       'signalValue', 'pValue', 'qValue', 'peak_center')
+write.csv(phf8_peaks,"/scratch/Shares/rinn/Sky/rchip/analysis/00_NEW_candidate_qc/csv_files_primers/phf8_peaks_ENCFF981ISM.csv",row.names = TRUE)
+
+# converting to Granges
+phf8_gr <- GRanges(phf8_peaks$chromosome, IRanges(phf8_peaks$start, phf8_peaks$end))
+# creating metaplot DF and running profile_tss
+phf8_metaplot_df <- data.frame(x = integer(), dens = numeric(), dbp = character())
+phf8_metaplot_df <- profile_tss(phf8_gr, promoters)
+# plotting
+ggplot(phf8_metaplot_df, aes(x = x, y = dens)) +
+  geom_line(size = 1.5)
+
+nrow(phf8_peaks)
+# 29363
+
+subsetByOverlaps(phf8_gr, promoters)
+# 20020
+```
+```{r}
+#DNMT1
+#do the wget in the terminal to get the file from encode (get link from encode site, copy the download button link)
+# wget https://www.encodeproject.org/files/ENCFF924FYI/@@download/ENCFF505RNR.bed.gz
+
+dnmt1_peaks <- read_tsv("/scratch/Shares/rinn/Sky/rchip/analysis/00_NEW_candidate_qc/data_files/DNMT1/ENCFF412WOK.bed.gz", col_names = F)
+names(dnmt1_peaks) <- c('chromosome', 'start', 'end', 'name', 'score', 'strand',
+                       'signalValue', 'pValue', 'qValue', 'peak_center')
+write.csv(dnmt1_peaks,"/scratch/Shares/rinn/Sky/rchip/analysis/00_NEW_candidate_qc/csv_files_primers/dnmt1_peaks_ENCFF412WOK.csv",row.names = TRUE)
+
+# converting to Granges
+dnmt1_gr <- GRanges(dnmt1_peaks$chromosome, IRanges(dnmt1_peaks$start, dnmt1_peaks$end))
+# creating metaplot DF and running profile_tss
+dnmt1_metaplot_df <- data.frame(x = integer(), dens = numeric(), dbp = character())
+dnmt1_metaplot_df <- profile_tss(dnmt1_gr, promoters)
+# plotting
+ggplot(dnmt1_metaplot_df, aes(x = x, y = dens)) +
+  geom_line(size = 1.5)
+
+nrow(dnmt1_peaks)
+# 2339
+
+subsetByOverlaps(dnmt1_gr, promoters)
+# 1061
+```
+
+
+```{r}
+#CHD7 (named the items incorrectly)
+#do the wget in the terminal to get the file from encode (get link from encode site, copy the download button link)
+# wget https://www.encodeproject.org/files/ENCFF924FYI/@@download/ENCFF505RNR.bed.gz
+
+chd1_peaks <- read_tsv("/scratch/Shares/rinn/Sky/rchip/analysis/00_NEW_candidate_qc/data_files/CHD1/ENCFF722UJW.bed.gz", col_names = F)
+names(chd1_peaks) <- c('chromosome', 'start', 'end', 'name', 'score', 'strand',
+                       'signalValue', 'pValue', 'qValue', 'peak_center')
+write.csv(chd1_peaks,"/scratch/Shares/rinn/Sky/rchip/analysis/00_NEW_candidate_qc/csv_files_primers/chd1_peaks_ENCFF722UJW.csv",row.names = TRUE)
+
+# converting to Granges
+chd1_gr <- GRanges(chd1_peaks$chromosome, IRanges(chd1_peaks$start, chd1_peaks$end))
+# creating metaplot DF and running profile_tss
+chd1_metaplot_df <- data.frame(x = integer(), dens = numeric(), dbp = character())
+chd1_metaplot_df <- profile_tss(chd1_gr, promoters)
+# plotting
+ggplot(chd1_metaplot_df, aes(x = x, y = dens)) +
+  geom_line(size = 1.5)
+
+nrow(chd1_peaks)
+# 1177
+
+subsetByOverlaps(chd1_gr, promoters)
+# 466
+```
+```{r}
+#CHD1 
+#do the wget in the terminal to get the file from encode (get link from encode site, copy the download button link)
+# wget https://www.encodeproject.org/files/ENCFF924FYI/@@download/ENCFF505RNR.bed.gz
+
+chd11_peaks <- read_tsv("/scratch/Shares/rinn/Sky/rchip/analysis/00_NEW_candidate_qc/data_files/CHD11/ENCFF408NUX.bed.gz", col_names = F)
+names(chd11_peaks) <- c('chromosome', 'start', 'end', 'name', 'score', 'strand',
+                       'signalValue', 'pValue', 'qValue', 'peak_center')
+write.csv(chd11_peaks,"/scratch/Shares/rinn/Sky/rchip/analysis/00_NEW_candidate_qc/csv_files_primers/chd11_peaks_ENCFF408NUX.csv",row.names = TRUE)
+
+# converting to Granges
+chd11_gr <- GRanges(chd11_peaks$chromosome, IRanges(chd11_peaks$start, chd11_peaks$end))
+# creating metaplot DF and running profile_tss
+chd11_metaplot_df <- data.frame(x = integer(), dens = numeric(), dbp = character())
+chd11_metaplot_df <- profile_tss(chd11_gr, promoters)
+# plotting
+ggplot(chd11_metaplot_df, aes(x = x, y = dens)) +
+  geom_line(size = 1.5)
+
+nrow(chd11_peaks)
+# 11271
+
+subsetByOverlaps(chd11_gr, promoters)
+# 7813
 ```
 
